@@ -29,3 +29,15 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+.form-container::-webkit-scrollbar {
+  width: 8px; /* Largura da barra de rolagem */
+}
+.form-container {
+  width: 100%;
+  max-height: 400px;
+  overflow-y: auto; /* Ativa a barra de rolagem vertical */
+  padding: 40px 50px 50px 40px;
+  border-radius: 10px;
+  background-color: #fff;
+  
+}
