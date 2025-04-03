@@ -1,8 +1,8 @@
 ﻿namespace ConsultasMedicas.Models
 {
-    public class Especialidade
+    public class Sexo
     {
-        public int IdEspecialidade { get; set; }
+        public int idSexo { get; set; }
         public string Nome { get; set; }
     }
 }

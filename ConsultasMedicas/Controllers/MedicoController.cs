@@ -22,6 +22,12 @@ namespace ConsultasMedicas.Controllers
             };
 
             return View();
+            
+            ViewBag.Sexo = new List<SelectListItem>
+            {
+                new SelectListItem { Value = "1", Text = "Feminino" },
+                new SelectListItem { Value = "2", Text = "Masculino" }
+            };
         }
         public IActionResult Login()
         {
