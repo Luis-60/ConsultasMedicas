@@ -7,7 +7,7 @@
 
 <form asp-controller="Medico" asp-action="Registrar" method="post">
 	<div class="d-flex flex-column gap-3">
-		<h1>Cadastrar Médico</h1>
+		<h1>Se Cadastrar</h1>
 
 		<div class="form-group">
 			<div class="col-md-2">
@@ -83,7 +83,16 @@
 				<span asp-validation-for="CPF" class="text-danger"></span>
 			</div>
 		</div>
-
+		<div class="form-group">
+			<div class="col-md">
+				<label asp-for="idSexo" class="form-label"></label>
+			</div>
+			<div>
+				<select asp-for="idSexo" asp-items="@ViewBag.Sexo" class="form-select">
+					<option value="">Selecione um Sexo</option>
+				</select>
+			</div>
+		</div>
 		<div class="form-group">
 			<div class="col-md-2">
 				<label asp-for="idEspecialidade" class="form-label"></label>

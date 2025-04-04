@@ -7,7 +7,6 @@ namespace ConsultasMedicas.Models
     {
         [Key]
         public int IdMedico { get; set; }
-
         [Required(ErrorMessage = "O campo Nome é Obrigatório")]
         [MaxLength(255)]
         [Display(Name = "Nome")]
@@ -15,7 +14,6 @@ namespace ConsultasMedicas.Models
         [Required(ErrorMessage = "O campo Telefone é Obrigatório")]
         [MaxLength(255)]
         [Display(Name = "Telefone")]
-        
         public string Telefone { get; set; }
         [Required(ErrorMessage = "O campo Email é Obrigatório")]
         [MaxLength(255)]

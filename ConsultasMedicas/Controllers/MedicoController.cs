@@ -20,14 +20,13 @@ namespace ConsultasMedicas.Controllers
                 new SelectListItem { Value = "1", Text = "Consultório A" },
                 new SelectListItem { Value = "2", Text = "Consultório B" }
             };
-
-            return View();
             
             ViewBag.Sexo = new List<SelectListItem>
             {
                 new SelectListItem { Value = "1", Text = "Feminino" },
                 new SelectListItem { Value = "2", Text = "Masculino" }
             };
+            return View();
         }
         public IActionResult Login()
         {

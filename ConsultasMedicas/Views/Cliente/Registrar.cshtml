@@ -1,13 +1,13 @@
-﻿@model Medico
+﻿@model Cliente
 @{
 	Layout = "../Shared/_AuthLayout.cshtml";
     ViewData["Title"] = "Cadastro Cliente";
 }
 
 
-<form asp-controller="Medico" asp-action="Registrar" method="post">
+<form asp-controller="Cliente" asp-action="Registrar" method="post">
 	<div class="d-flex flex-column gap-3">
-		<h1>Cadastrar Médico</h1>
+		<h1>Se Cadastrar</h1>
 
 		<div class="form-group">
 			<div class="col-md-2">
@@ -44,13 +44,22 @@
 				<span asp-validation-for="Telefone" class="text-danger"></span>
 			</div>
 		</div>
-
+		<div class="form-group">
+			<div class="col-md">
+				<label asp-for="idSexo" class="form-label"></label>
+			</div>
+			<div>
+				<select asp-for="idSexo" asp-items="@ViewBag.Sexo" class="form-select">
+					<option value="">Selecione um Sexo</option>
+				</select>
+			</div>
+		</div>
 		<div class="form-group">
 			<div class="col-md-2">
 				<label asp-for="Email" class="form-label"></label>
 			</div>
 			<div>
-				<input oninput="formatPhoneNumber(this)" type="email" asp-for="Email" class="form-control"
+				<input type="email" asp-for="Email" class="form-control"
 					placeholder="Insira seu Email" required />
 				<span asp-validation-for="Email" class="text-danger"></span>
 			</div>
@@ -58,15 +67,12 @@
 
 		<div class="form-group">
 			<div class="col-md-2">
-				<label asp-for="CRM" class="form-label"></label>
+				<label asp-for="DataNascimento" class="form-label"></label>
 			</div>
 			<div>
-				<input type="text" asp-for="CRM" class="form-control"
-					oninput="formatCRMNumber(this)"
-					placeholder="CRM/UF 000000"
-					pattern="^CRM\/[A-Z]{2}\s\d{6}$"
-					title="Formato esperado: CRM/UF 000000" required />
-				<span asp-validation-for="CRM" class="text-danger"></span>
+				<input type="date" asp-for="DataNascimento" class="form-control"
+					placeholder="Insira sua Data de Nascimento" required />
+				<span asp-validation-for="DataNascimento" class="text-danger"></span>
 			</div>
 		</div>
 
@@ -81,28 +87,6 @@
 					pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
 					title="Formato esperado: 000.000.000-00" required />
 				<span asp-validation-for="CPF" class="text-danger"></span>
-			</div>
-		</div>
-
-		<div class="form-group">
-			<div class="col-md-2">
-				<label asp-for="idEspecialidade" class="form-label"></label>
-			</div>
-			<div>
-				<select asp-for="idEspecialidade" asp-items="@ViewBag.Especialidade" class="form-select">
-					<option value="">Selecione uma Especialidade</option>
-				</select>
-			</div>
-		</div>
-
-		<div class="form-group">
-			<div class="col-md-2">
-				<label asp-for="idConsultorio" class="form-label"></label>
-			</div>
-			<div>
-				<select asp-for="idConsultorio" asp-items="@ViewBag.Consultorio" class="form-select">
-					<option value="">Selecione um Consultório</option>
-				</select>
 			</div>
 		</div>
 

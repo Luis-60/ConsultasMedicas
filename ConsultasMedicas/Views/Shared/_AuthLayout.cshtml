@@ -1,6 +1,8 @@
 @{
     Layout = "/Views/Shared/_Layout.cshtml";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
 }
+
 
 <div class="row justify-content-center">
     <div class="col-5 mt-5">
@@ -8,12 +10,12 @@
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs">
                     <li class="nav-item">
-                        <a class="nav-link active" asp-area="" asp-controller="Medico" asp-action="Login">
+                        <a class="nav-link active" asp-area="" asp-controller="@currentController" asp-action="Login">
                             Login
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" asp-area="" asp-action="Registrar" asp-controller="Medico">
+                        <a class="nav-link" asp-area="" asp-controller="@currentController" asp-action="Registrar">
                         Registrar
                         </a>
                     </li>

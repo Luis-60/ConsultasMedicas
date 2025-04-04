@@ -6,7 +6,7 @@ namespace ConsultasMedicas.Models
     {
         [Key]
         public int IdTipo { get; set; }
-[Required]
+        [Required]
         public string Nome { get; set; }
     }
 }
