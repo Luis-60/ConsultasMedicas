@@ -1,8 +1,12 @@
-﻿namespace ConsultasMedicas.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ConsultasMedicas.Models
 {
     public class Sexo
     {
-        public int idSexo { get; set; }
-        public string Nome { get; set; }
+        [Key]
+        public int IdSexo { get; set; }
+        [MaxLength(50)]
+        public string? Nome { get; set; }
     }
 }

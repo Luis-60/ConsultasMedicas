@@ -12,5 +12,9 @@ namespace ConsultasMedicas.Controllers
         {
             return View();
         }
+        public IActionResult MarcarConsulta()
+        {
+            return View();
+        }
     }
 }

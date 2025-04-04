@@ -10,18 +10,18 @@ namespace ConsultasMedicas.Models
         [Required(ErrorMessage = "O campo Nome é Obrigatório")]
         [MaxLength(255)]
         [Display(Name = "Nome")]
-        public string Nome { get; set; }
+        public string? Nome { get; set; }
         [Required(ErrorMessage = "O campo Senha é Obrigatório")]
         [MaxLength(48)]
-        public string Senha { get; set; }
+        public string? Senha { get; set; }
         [Required(ErrorMessage = "O campo Telefone é Obrigatório")]
         [MaxLength(255)]
         [Display(Name = "Telefone")]
-        public string Telefone { get; set; }
+        public string? Telefone { get; set; }
         [Required(ErrorMessage = "O campo Email é Obrigatório")]
         [MaxLength(255)]
         [Display(Name = "Email")]
-        public string Email { get; set; }
+        public string? Email { get; set; }
         [Required(ErrorMessage = "O campo Data de Nascimento é Obrigatório")]
         [Display(Name = "Data de Nascimento")]
         public DateTime DataNascimento { get; set; }
@@ -31,8 +31,8 @@ namespace ConsultasMedicas.Models
         public int CPF { get; set; }
         [Display(Name = "Sexo")]
         [ForeignKey("Sexo")]
-        public int idSexo { get; set; }
-        public virtual Sexo Sexo { get; set;}
+        public int IdSexo { get; set; }
+        public virtual Sexo? Sexo { get; set;}
      
     }
 }
