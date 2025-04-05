@@ -1,0 +1,46 @@
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+}
+
+
+<div class="row justify-content-center">
+    <div class="col-5 mt-5">
+        <div class="card login-logout-card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" asp-area="" asp-controller="@currentController" asp-action="Login">
+                            Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-area="" asp-controller="@currentController" asp-action="Registrar">
+                        Registrar
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="form-container">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        $(function () {
+           const currentPage = location.pathname;
+           $('.nav-tabs li a').each(function(){
+                const $this = $(this);
+                if (currentPage.toLowerCase().indexOf($this.attr('href').toLowerCase()) !== -1) {
+                    $this.addClass('active');
+                } else {
+                    $this.removeClass('active');
+                }   
+           });
+        });
+    </script>    
+}

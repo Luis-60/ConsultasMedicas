@@ -1,7 +1,60 @@
 ﻿@model Consulta
 
 
+
 @{
-	Layout = "../Shared/_AuthLayout.cshtml";
+	Layout = "../Shared/_Layout.cshtml";
 	ViewData["Title"] = "MarcarConsulta";
 }
+
+<h2>Marcar Consulta</h2>
+
+<form asp-action="MarcarConsulta" method="post">
+    <div class="form-group">
+        <label for="IdUF">UF</label>
+        <select name="IdUF" class="form-control" asp-items="ViewBag.UFs">
+            <option value="">Selecione uma UF</option>
+        </select>
+    </div>
+
+
+    <div class="form-group">
+        <label for="IdEspecialidade">Especialidade</label>
+        <select name="IdEspecialidade" class="form-control" asp-items="ViewBag.Especialidades">
+            <option value="">Selecione uma Especialidade</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="IdConsultorio">Consultório</label>
+        <select name="IdConsultorio" class="form-control" asp-items="ViewBag.Consultorios">
+            <option value="">Selecione um Consultorio</option>
+        </select>
+    </div>
+
+
+    <div class="form-group">
+        <label for="IdMedico">Médico</label>
+        <select name="IdMedico" class="form-control" asp-items="ViewBag.Medicos">
+            <option value="">Selecione um Médico</option>
+        </select>
+    </div>
+
+    
+
+    <div class="form-group">
+        <label asp-for="Data" class="control-label"></label>
+        <input asp-for="Data" class="form-control" type="date" />
+        <span asp-validation-for="Data" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label for="Horario">Horario</label>
+        <select name="Horario" class="form-control" asp-items="ViewBag.Horarios">
+            <option value="">Selecione um Horario</option>
+        </select>
+    </div>
+
+    <br />
+    <input type="submit" value="Marcar Consulta" class="btn btn-primary" />
+</form>
