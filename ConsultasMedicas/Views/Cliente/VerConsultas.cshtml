@@ -11,7 +11,7 @@
 
 
 
-<table id="example" class="display" style="width:100%">
+<table id="tabela" class="display" style="width:100%">
     <thead>
         <tr>
             <th>Médico</th>
@@ -32,16 +32,6 @@
             <td>14:00</td>
         </tr>
     </tbody>
-    <tfoot>
-        <tr>
-            <th>Médico</th>
-            <th>Especialidade</th>
-            <th>Consultório</th>
-            <th>Endereço</th>
-            <th>Data</th>
-            <th>Horário</th>
-        </tr>
-    </tfoot>
 </table>
 
 
@@ -49,9 +39,9 @@
     @section Scripts {
         <script>
                    $(document).ready(function () {
-            $('#example').DataTable({
+            $('#tabela').DataTable({
                 language: {
-                    url: "//cdn.datatables.net/plug-ins/2.2.2/i18n/pt-BR.json"
+                    url: "https://cdn.datatables.net/plug-ins/2.2.2/i18n/pt-BR.json"
                 }
             });
         });
