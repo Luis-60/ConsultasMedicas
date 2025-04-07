@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using ConsultasMedicas.ViewModel;
+using ConsultasMedicas.ViewModels;
 
 namespace ConsultasMedicas.Controllers
 {
@@ -277,7 +278,28 @@ namespace ConsultasMedicas.Controllers
             var consultas = await _context.Consultas
                                           .Include(c => c.Cliente)
                                           .Include(c => c.Medico)
-                                          .Where(c => c.IdMedico == id)
+                                          .ThenInclude(m => m.Especialidade)
+                                          .Include(c => c.Medico)
+                                          .ThenInclude(m => m.Consultorio)
+                                          .ThenInclude(co => co.UF)
+                                          .Where(c => c.IdCliente == id)
+                                          .Select(c => new ConsultaViewModel
+                                          {
+                                              IdConsulta = c.IdConsulta,
+                                              Data = c.Data,
+                                              Horario = c.Horario,
+                                              IdCliente = c.Cliente.IdCliente,
+                                              NomeCliente = c.Cliente.Nome,
+                                              EmailCliente = c.Cliente.Email,
+                                              TelefoneCliente = c.Cliente.Telefone,
+                                              IdEspecialidade = c.Medico.Especialidade.IdEspecialidade,
+                                              NomeEspecialidade = c.Medico.Especialidade.Nome,
+                                              IdConsultorio = c.Medico.Consultorio.IdConsultorio,
+                                              NomeConsultorio = c.Medico.Consultorio.Nome,
+                                              EnderecoConsultorio = c.Medico.Consultorio.Endereco,
+                                              CidadeConsultorio = c.Medico.Consultorio.Cidade,
+                                              UFConsultorio = c.Medico.Consultorio.UF.Nome
+                                          })
                                           .ToListAsync();
 
             if (consultas == null || !consultas.Any())

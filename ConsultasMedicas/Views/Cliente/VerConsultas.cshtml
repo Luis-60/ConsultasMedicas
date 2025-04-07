@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Consulta>
+﻿@model IEnumerable<ConsultasMedicas.ViewModels.ConsultaViewModel>
 
 @{
     Layout = "../Shared/_Layout.cshtml";
@@ -23,15 +23,15 @@
         @foreach (var consulta in Model)
         {
             <tr>
-                <td>@consulta.Medico?.Nome</td>
-                <td>@consulta.Medico?.Especialidade?.Nome</td>
-                <td>@consulta.Medico?.Consultorio?.Nome</td>
-                <td>@consulta.Medico?.Consultorio?.Endereco</td>
+                <td>@consulta.NomeCliente</td>
+                <td>@consulta.NomeEspecialidade</td>
+                <td>@consulta.NomeConsultorio</td>
+                <td>@consulta.EnderecoConsultorio</td>
                 <td>@consulta.Data.ToShortDateString()</td>
                 <td>@consulta.Horario</td>
                 <td>
-                    <a asp-action="Editar" asp-controller="Consulta"  class="btn btn-primary btn-sm">Editar</a>
-                    <a asp-action="Deletar" asp-controller="Consulta" class="btn btn-danger btn-sm">Excluir</a>
+                    <a asp-action="Editar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-primary btn-sm">Editar</a>
+                    <a asp-action="Deletar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-danger btn-sm">Excluir</a>
                 </td>
             </tr>
         }
