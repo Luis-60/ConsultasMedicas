@@ -1,0 +1,33 @@
+@{
+    ViewData["Title"] = "Perfil";
+}
+@model Cliente
+<div class="user-info">
+    <h1>Perfil</h1>
+    <div class="nome">
+        <label asp-for="Nome"></label>
+        <h6>@Model.Nome</h6>
+    </div>
+    <div class="telefone">
+        <label asp-for="Telefone"></label>
+        <h6>@Model.Telefone</h6>
+    </div>
+    <div class="email">
+        <label asp-for="Email"></label>
+        <h6>@Model.Email</h6>
+    </div>
+    <div class="datanasc">
+        <label asp-for="DataNascimento"></label>
+        <h6>@Model.DataNascimento</h6>
+    </div>
+    <div class="CPF">
+        <label asp-for="CPF"></label>
+        <h6>@Model.CPF</h6>
+    </div>
+    <div class="Sexo">
+        <label asp-for="Sexo"></label>
+        <h6>@Model.Sexo</h6>
+        <a class="btn btn-secondary" asp-action="Editar" asp-route="@Model.IdCliente">Editar</a>
+        <a class="btn btn-danger" asp-action="Deletar" asp-route="@Model.IdCliente">Deletar</a>
+    </div>
+</div>
