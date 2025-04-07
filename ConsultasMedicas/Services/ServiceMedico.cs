@@ -10,6 +10,7 @@ namespace ConsultasMedicas.Services
         public RepositoryMedico RptMedico { get; set; }
         public RepositoryConsultorio RptConsultorio { get; set; }
         public RepositorySexo RptSexo { get; set; }
+        public RepositoryUF RptUF { get; set; }
 
         public ServiceMedico(AppDbContext pContexto)
         {
@@ -18,6 +19,7 @@ namespace ConsultasMedicas.Services
             RptMedico = new RepositoryMedico(_contexto, true);
             RptConsultorio = new RepositoryConsultorio(_contexto, true);
             RptSexo = new RepositorySexo(_contexto, true);
+            RptUF = new RepositoryUF(_contexto, true);
         }
     }
 }
