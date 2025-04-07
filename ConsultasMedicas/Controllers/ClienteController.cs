@@ -93,10 +93,15 @@ namespace ConsultasMedicas.Controllers
 
             var token = GerarTokenJWT(cliente.Email!, "Cliente");
 
-            TempData["Token"] = token;
+            // Armazenar o token em um cookie
+            Response.Cookies.Append("AuthToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Expires = DateTime.UtcNow.AddHours(2)
+            });
 
             return RedirectToAction("Index");
-
         }
 
         public IActionResult Login()
@@ -107,8 +112,7 @@ namespace ConsultasMedicas.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var token = TempData["Token"] as string;
-            if (string.IsNullOrEmpty(token))
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
             {
                 return Unauthorized("Token não fornecido.");
             }
@@ -133,51 +137,155 @@ namespace ConsultasMedicas.Controllers
             return View(cliente);
         }
 
-        public async Task<IActionResult> Editar(int id)
+        [HttpGet]
+        public async Task<IActionResult> Editar()
         {
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+
+            if (cliente == null)
+            {
+                return NotFound("Cliente não encontrado.");
+            }
+
             await CarregarCombos();
-            var cliente = await _serviceCliente.RptCliente.SelecionarChaveAsync(id);
             return View(cliente);
         }
 
-        //    [HttpPost]
-        //    public async Task<IActionResult> Editar(Medico medico)
-        //    {
-        //        await CarregarCombos();
-        //        if (ModelState.IsValid)
-        //        {
-        //            ViewData["Mensagem"] = "Dados salvos com sucesso.";
-        //            await _serviceMedico.RptMedico.AlterarAsync(medico);
-        //            return View(medico);
-        //        }
-        //        return View();
-        //    }
+        [HttpPost]
+        public async Task<IActionResult> Editar(Cliente cliente)
+        {
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
 
-        //    public async Task<IActionResult> Deletar(int? id)
-        //    {
-        //        if (id == null)
-        //            return NotFound();
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
 
-        //        var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.IdMedico == id);
-        //        if (medico == null)
-        //            return NotFound();
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
 
-        //        return View(medico);
-        //    }
+            var email = emailClaim.Value;
+            var clienteExistente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
 
-        //    [HttpPost, ActionName("Deletar")]
-        //    [ValidateAntiForgeryToken]
-        //    public async Task<IActionResult> DeletarConfirmado(int id)
-        //    {
-        //        var medico = await _context.Medicos.FindAsync(id);
-        //        if (medico != null)
-        //        {
-        //            _context.Medicos.Remove(medico);
-        //            await _context.SaveChangesAsync();
-        //        }
+            if (clienteExistente == null)
+            {
+                return NotFound("Cliente não encontrado.");
+            }
 
-        //        return RedirectToAction(nameof(Index));
-        //    }
-        //}
+            if (ModelState.IsValid)
+            {
+                // Atualizar os dados do cliente existente
+                clienteExistente.Nome = cliente.Nome;
+                clienteExistente.Telefone = cliente.Telefone;
+                clienteExistente.Email = cliente.Email;
+                clienteExistente.DataNascimento = cliente.DataNascimento;
+                clienteExistente.CPF = cliente.CPF;
+                clienteExistente.IdSexo = cliente.IdSexo;
+
+                // Salvar as alterações no banco de dados
+                _context.Clientes.Update(clienteExistente);
+                await _context.SaveChangesAsync();
+
+                ViewData["Mensagem"] = "Dados salvos com sucesso.";
+                await CarregarCombos();
+                return View(clienteExistente);
+            }
+
+            await CarregarCombos();
+            return View(cliente);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Deletar()
+        {
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+
+            if (cliente == null)
+            {
+                return NotFound("Cliente não encontrado.");
+            }
+
+            return View(cliente);
+        }
+
+        [HttpPost, ActionName("Deletar")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletarConfirmado()
+        {
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+
+            if (cliente != null)
+            {
+                _context.Clientes.Remove(cliente);
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction("Index", "Home");
+        }
+        [HttpGet]
+        public async Task<IActionResult> VerConsultas(int id)
+        {
+            var consultas = await _context.Consultas
+                                          .Include(c => c.Cliente)
+                                          .Include(c => c.Medico)
+                                          .Where(c => c.IdMedico == id)
+                                          .ToListAsync();
+
+            if (consultas == null || !consultas.Any())
+            {
+                return NotFound("Nenhuma consulta encontrada para este cliente.");
+            }
+
+            return View(consultas);
+        }
     }
 }

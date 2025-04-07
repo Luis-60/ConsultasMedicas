@@ -36,4 +36,7 @@
         <label asp-for="Especialidade"></label>
         <h6>@Model.Especialidade?.Nome</h6>
     </div>
+    <a asp-action="Editar" asp-controller="Medico" class="btn btn-primary">Editar</a>
+    <a asp-action="Deletar" asp-controller="Medico" class="btn btn-danger">Deletar</a>
+    <a asp-action="VerConsultas" asp-route-id="@Model.IdMedico" class="btn btn-info">Ver Consultas</a>
 </div>

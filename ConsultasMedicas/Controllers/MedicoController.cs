@@ -33,6 +33,7 @@ namespace ConsultasMedicas.Controllers
             ViewData["Especialidade"] = new SelectList(await _serviceMedico.RptEspecialidade.ListarTodosAsync(), "IdEspecialidade", "Nome");
             ViewData["UF"] = new SelectList(await _serviceMedico.RptUF.ListarTodosAsync(), "IdUF", "Nome");
         }
+
         private string GerarTokenJWT(string email, string role)
         {
             var keyConfig = _configuration["Jwt:Key"];
@@ -45,8 +46,7 @@ namespace ConsultasMedicas.Controllers
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
+                Subject = new ClaimsIdentity(new[] {
                     new Claim(ClaimTypes.NameIdentifier, email),
                     new Claim(ClaimTypes.Role, role)
                 }),
@@ -94,10 +94,15 @@ namespace ConsultasMedicas.Controllers
 
             var token = GerarTokenJWT(medico.Email!, "Medico");
 
-            TempData["Token"] = token;
+            // Armazenar o token em um cookie
+            Response.Cookies.Append("AuthToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Expires = DateTime.UtcNow.AddHours(2)
+            });
 
             return RedirectToAction("Index");
-            
         }
 
         public IActionResult Login()
@@ -108,8 +113,7 @@ namespace ConsultasMedicas.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var token = TempData["Token"] as string;
-            if (string.IsNullOrEmpty(token))
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
             {
                 return Unauthorized("Token não fornecido.");
             }
@@ -134,50 +138,157 @@ namespace ConsultasMedicas.Controllers
             return View(medico);
         }
 
-        public async Task<IActionResult> Editar(int id)
+        [HttpGet]
+        public async Task<IActionResult> Editar()
         {
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
+
+            if (medico == null)
+            {
+                return NotFound("Médico não encontrado.");
+            }
+
             await CarregarCombos();
-            var medico = await _serviceMedico.RptMedico.SelecionarChaveAsync(id);
             return View(medico);
         }
 
         [HttpPost]
         public async Task<IActionResult> Editar(Medico medico)
         {
-            await CarregarCombos();
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var medicoExistente = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
+
+            if (medicoExistente == null)
+            {
+                return NotFound("Médico não encontrado.");
+            }
+
             if (ModelState.IsValid)
             {
+                // Atualizar os dados do médico existente
+                medicoExistente.Nome = medico.Nome;
+                medicoExistente.Telefone = medico.Telefone;
+                medicoExistente.Email = medico.Email;
+                medicoExistente.CPF = medico.CPF;
+                medicoExistente.CRM = medico.CRM;
+                medicoExistente.IdSexo = medico.IdSexo;
+                medicoExistente.IdConsultorio = medico.IdConsultorio;
+                medicoExistente.IdEspecialidade = medico.IdEspecialidade;
+
+                // Salvar as alterações no banco de dados
+                _context.Medicos.Update(medicoExistente);
+                await _context.SaveChangesAsync();
+
                 ViewData["Mensagem"] = "Dados salvos com sucesso.";
-                await _serviceMedico.RptMedico.AlterarAsync(medico);
-                return View(medico);
+                await CarregarCombos();
+                return View(medicoExistente);
             }
-            return View();
+
+            await CarregarCombos();
+            return View(medico);
         }
 
-        public async Task<IActionResult> Deletar(int? id)
+        [HttpGet]
+        public async Task<IActionResult> Deletar()
         {
-            if (id == null)
-                return NotFound();
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
 
-            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.IdMedico == id);
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
+
             if (medico == null)
-                return NotFound();
+            {
+                return NotFound("Médico não encontrado.");
+            }
 
             return View(medico);
         }
 
         [HttpPost, ActionName("Deletar")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeletarConfirmado(int id)
+        public async Task<IActionResult> DeletarConfirmado()
         {
-            var medico = await _context.Medicos.FindAsync(id);
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
+
             if (medico != null)
             {
                 _context.Medicos.Remove(medico);
                 await _context.SaveChangesAsync();
             }
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction("Index", "Home");
+        }
+        [HttpGet]
+        public async Task<IActionResult> VerConsultas(int id)
+        {
+            var consultas = await _context.Consultas
+                                          .Include(c => c.Cliente)
+                                          .Include(c => c.Medico)
+                                          .Where(c => c.IdMedico == id)
+                                          .ToListAsync();
+
+            if (consultas == null || !consultas.Any())
+            {
+                return NotFound("Nenhuma consulta encontrada para este médico.");
+            }
+
+            return View(consultas);
         }
     }
 }
