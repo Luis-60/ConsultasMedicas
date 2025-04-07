@@ -28,7 +28,7 @@ namespace ConsultasMedicas.Models
         [Required(ErrorMessage = "O campo CPF é Obrigatório")]
         [MaxLength(16)]
         [Display(Name = "CPF")]
-        public int CPF { get; set; }
+        public string? CPF { get; set; }
         [Display(Name = "Sexo")]
         [ForeignKey("Sexo")]
         public int IdSexo { get; set; }

@@ -74,7 +74,7 @@ namespace ConsultasMedicas.Migrations
                     Telefone = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     DataNascimento = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CPF = table.Column<int>(type: "int", maxLength: 16, nullable: false),
+                    CPF = table.Column<string>(type: "nvarchar(16)", maxLength: 16, nullable: false),
                     IdSexo = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>

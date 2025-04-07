@@ -15,7 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Registro do serviço ServiceMedico
 builder.Services.AddScoped<ServiceMedico>();
-
+builder.Services.AddScoped<ServiceCliente>();
 // Configuração de autenticação JWT
 builder.Services.AddAuthentication(options =>
 {

@@ -1,134 +1,183 @@
-﻿//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.AspNetCore.Mvc.Rendering;
-//using Microsoft.EntityFrameworkCore;
-//using System.Reflection.Metadata.Ecma335;
+﻿using ConsultasMedicas.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using ConsultasMedicas.Services;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using ConsultasMedicas.ViewModel;
 
-//namespace ConsultasMedicas.Controllers
-//{
-//    public class Cliente : Controller
-//    {
-//        public IActionResult Login()
-//        {
-//            return View();
-//        }
-//        public IActionResult Registrar()
-//        {
-//            return View();
-//        }
+namespace ConsultasMedicas.Controllers
+{
+    public class ClienteController : Controller
+    {
+        private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
+        private readonly ServiceCliente _serviceCliente;
 
+        public ClienteController(IConfiguration configuration, AppDbContext context, ServiceCliente cliente)
+        {
+            _serviceCliente = cliente;
+            _context = context;
+            _configuration = configuration;
+        }
 
-//        public IActionResult MarcarConsulta()
-//        {
-//            ViewBag.UFs = new List<SelectListItem>
-//    {
-//        new SelectListItem { Value = "1", Text = "SP" },
-//        new SelectListItem { Value = "2", Text = "RJ" },
-//        new SelectListItem { Value = "3", Text = "MG" }
-//    };
+        private async Task CarregarCombos()
+        {
+            ViewData["Sexo"] = new SelectList(await _serviceCliente.RptSexo.ListarTodosAsync(), "IdSexo", "Nome");
 
-//            ViewBag.Especialidades = new List<SelectListItem>
-//    {
-//        new SelectListItem { Value = "1", Text = "Cardiologista" },
-//        new SelectListItem { Value = "2", Text = "Dermatologista" },
-//        new SelectListItem { Value = "3", Text = "Ortopedista" }
-//    };
+        }
 
-//            ViewBag.Medicos = new List<SelectListItem>
-//    {
-//        new SelectListItem { Value = "1", Text = "Dra. Ana Paula" },
-//        new SelectListItem { Value = "2", Text = "Dr. João Souza" },
-//        new SelectListItem { Value = "3", Text = "Dr. Pedro Mendes" }
-//    };
-//            ViewBag.Consultorios = new List<SelectListItem>
-//    {
-//        new SelectListItem { Value = "1", Text = "Santa Casa de Aparecida" },
-//        new SelectListItem { Value = "2", Text = "José Alfredo da Paz" },
-//        new SelectListItem { Value = "3", Text = "Albert Einstein dos Pobres" }
-//    };
-//            ViewBag.Horarios = new List<SelectListItem>
-//{
-//        new SelectListItem { Value = "06:00", Text = "06:00" },
-//        new SelectListItem { Value = "06:30", Text = "06:30" },
-//        new SelectListItem { Value = "07:00", Text = "07:00" },
-//        new SelectListItem { Value = "07:30", Text = "07:30" },
-//        new SelectListItem { Value = "08:00", Text = "08:00" },
-//        new SelectListItem { Value = "08:30", Text = "08:30" },
-//        new SelectListItem { Value = "09:00", Text = "09:00" },
-//        new SelectListItem { Value = "09:30", Text = "09:30" },
-//        new SelectListItem { Value = "10:00", Text = "10:00" },
-//        new SelectListItem { Value = "10:30", Text = "10:30" },
-//        new SelectListItem { Value = "11:00", Text = "11:00" },
-//        new SelectListItem { Value = "11:30", Text = "11:30" },
-//        new SelectListItem { Value = "13:30", Text = "13:30" },
-//        new SelectListItem { Value = "14:00", Text = "14:00" },
-//        new SelectListItem { Value = "14:30", Text = "14:30" },
-//        new SelectListItem { Value = "15:00", Text = "15:00" },
-//        new SelectListItem { Value = "15:30", Text = "15:30" },
-//        new SelectListItem { Value = "16:00", Text = "16:00" },
-//        new SelectListItem { Value = "16:30", Text = "16:30" },
-//        new SelectListItem { Value = "17:00", Text = "17:00" },
-//        new SelectListItem { Value = "17:30", Text = "17:30" },
-//        new SelectListItem { Value = "18:00", Text = "18:00" }
-//};
+        private string GerarTokenJWT(string email, string role)
+        {
+            var keyConfig = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(keyConfig))
+            {
+                throw new ArgumentNullException("Jwt:Key", "A chave JWT não está configurada.");
+            }
+            var key = Encoding.ASCII.GetBytes(keyConfig);
+            var tokenHandler = new JwtSecurityTokenHandler();
 
-//            return View();
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(ClaimTypes.NameIdentifier, email),
+                    new Claim(ClaimTypes.Role, role)
+                }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
 
-//        }
-//        public IActionResult VerConsultas()
-//        {
-//            return View();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
 
-//        }
-//        public IActionResult Index()
-//        {
-//            return View();
-//        }
-//        public async Task<IActionResult> Editar(int id)
-//        {
-//            await CarregarCombos();
-//            var cliente = await // await _RepositoryCliente.SelecionarChaveAsync(id)
-//            return View(cliente);
-//        }
+        [HttpGet]
+        public async Task<IActionResult> Registrar()
+        {
+            await CarregarCombos();
+            return View();
+        }
 
-//        [HttpPost]
-//        public async Task<IActionResult> Editar(Cliente cliente)
-//        {
-//            await CarregarCombos();
-//            if (ModelState.IsValid)
-//            {
-//                ViewData["Mensagem"] = "Dados salvos com sucesso.";
-//                await // _RepositoryCliente.AlterarAsync(cliente); ou _serviceCliente.RptCliente.AlterarAsync(cliente)
-//                return View(cliente);
-//            }
-//            return View();
-//        }
-//        public async Task<IActionResult> Deletar(int? id)
-//        {
-//            if (id == null)
-//            {
-//                return NotFound();
-//            }
-//            var cliente = await _context.Clientes
-//                .FirstOrDefaultAsync(m => m.Id == id);
-//            if (cliente == nul)
-//            {
-//                return NotFound();
-//            }
+        [HttpPost]
+        public async Task<IActionResult> Registrar(Cliente cliente)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-//            return View(cliente);
-//        }
-//        [HttpPost, ActionName("Deletar")]
-//        [ValidateAntiForgeryToken]
-//        public async Task<IActionResult> DeletarConfirmado(int id)
-//        {
-//            var cliente = await _context.Clientes.FindAsync(int id)
-//            if (cliente != null)
-//            {
-//                _context.Medicos.Remove(cliente);
-//            }
+            var incluirCliente = await _serviceCliente.RptCliente.IncluirAsync(cliente);
 
-//            await _context.SaveChancesAsync();
-//            return RedirectTooAction(nameof(Index));
-//        }
-//    }
-//}
+            var token = GerarTokenJWT(cliente.Email!, "Cliente");
+
+            ViewData["Token"] = token;
+            await CarregarCombos();
+
+            return View("Index", incluirCliente);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(ClienteLoginViewModel login)
+        {
+            var cliente = await _context.Clientes
+                .FirstOrDefaultAsync(c => c.Nome == login.Nome && c.Senha == login.Senha);
+
+            if (cliente == null)
+                return Unauthorized("Nome ou senha inválidos.");
+
+            var token = GerarTokenJWT(cliente.Email!, "Cliente");
+
+            TempData["Token"] = token;
+
+            return RedirectToAction("Index");
+
+        }
+
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Index()
+        {
+            var token = TempData["Token"] as string;
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var cliente = _context.Clientes.FirstOrDefault(c => c.Email == email);
+
+            if (cliente == null)
+            {
+                return NotFound("Cliente não encontrado.");
+            }
+            await CarregarCombos();
+            return View(cliente);
+        }
+
+        public async Task<IActionResult> Editar(int id)
+        {
+            await CarregarCombos();
+            var cliente = await _serviceCliente.RptCliente.SelecionarChaveAsync(id);
+            return View(cliente);
+        }
+
+        //    [HttpPost]
+        //    public async Task<IActionResult> Editar(Medico medico)
+        //    {
+        //        await CarregarCombos();
+        //        if (ModelState.IsValid)
+        //        {
+        //            ViewData["Mensagem"] = "Dados salvos com sucesso.";
+        //            await _serviceMedico.RptMedico.AlterarAsync(medico);
+        //            return View(medico);
+        //        }
+        //        return View();
+        //    }
+
+        //    public async Task<IActionResult> Deletar(int? id)
+        //    {
+        //        if (id == null)
+        //            return NotFound();
+
+        //        var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.IdMedico == id);
+        //        if (medico == null)
+        //            return NotFound();
+
+        //        return View(medico);
+        //    }
+
+        //    [HttpPost, ActionName("Deletar")]
+        //    [ValidateAntiForgeryToken]
+        //    public async Task<IActionResult> DeletarConfirmado(int id)
+        //    {
+        //        var medico = await _context.Medicos.FindAsync(id);
+        //        if (medico != null)
+        //        {
+        //            _context.Medicos.Remove(medico);
+        //            await _context.SaveChangesAsync();
+        //        }
+
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //}
+    }
+}

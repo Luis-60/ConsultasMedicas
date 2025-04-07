@@ -59,9 +59,10 @@ namespace ConsultasMedicas.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCliente"));
 
-                    b.Property<int>("CPF")
+                    b.Property<string>("CPF")
+                        .IsRequired()
                         .HasMaxLength(16)
-                        .HasColumnType("int");
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<DateTime>("DataNascimento")
                         .HasColumnType("datetime2");

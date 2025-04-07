@@ -26,8 +26,6 @@
     </div>
     <div class="Sexo">
         <label asp-for="Sexo"></label>
-        <h6>@Model.Sexo</h6>
-        <a class="btn btn-secondary" asp-action="Editar" asp-route="@Model.IdCliente">Editar</a>
-        <a class="btn btn-danger" asp-action="Deletar" asp-route="@Model.IdCliente">Deletar</a>
+        <h6>@Model.Sexo?.Nome</h6>
     </div>
 </div>
