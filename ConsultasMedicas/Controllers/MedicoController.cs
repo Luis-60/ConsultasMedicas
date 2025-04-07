@@ -8,6 +8,7 @@ using ConsultasMedicas.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ConsultasMedicas.Controllers
 {
@@ -30,6 +31,21 @@ namespace ConsultasMedicas.Controllers
             ViewData["Sexo"] = new SelectList(await _serviceMedico.RptSexo.ListarTodosAsync(), "IdSexo", "Nome");
             ViewData["Especialidade"] = new SelectList(await _serviceMedico.RptEspecialidade.ListarTodosAsync(), "IdEspecialidade", "Nome");
             ViewData["UF"] = new SelectList(await _serviceMedico.RptUF.ListarTodosAsync(), "IdUF", "Nome");
+        }
+        private void VerificarTokenJWT(string token)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier);
+
+            if (emailClaim == null)
+            {
+                Console.WriteLine("Token inválido: nameid não encontrado.");
+            }
+            else
+            {
+                Console.WriteLine($"Token válido: nameid = {emailClaim.Value}");
+            }
         }
 
         private string GerarTokenJWT(string email, string role)
@@ -94,6 +110,7 @@ namespace ConsultasMedicas.Controllers
             var token = GerarTokenJWT(medico.Email!, "Medico");
 
             TempData["Token"] = token;
+
             return RedirectToAction("Index");
             
         }
@@ -103,9 +120,10 @@ namespace ConsultasMedicas.Controllers
             return View();
         }
 
+        [HttpGet]
         public IActionResult Index()
         {
-            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            var token = TempData["Token"] as string;
             if (string.IsNullOrEmpty(token))
             {
                 return Unauthorized("Token não fornecido.");
