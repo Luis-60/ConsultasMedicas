@@ -13,7 +13,6 @@ namespace ConsultasMedicas.Models
         public DbSet<Especialidade> Especialidades { get; set; }
         public DbSet<Medico> Medicos { get; set; }
         public DbSet<Sexo> Sexos { get; set; }
-        public DbSet<Tipo> Tipos { get; set; }
         public DbSet<UF> UFs { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -34,7 +34,12 @@ namespace ConsultasMedicas.Controllers
 
         private string GerarTokenJWT(string email, string role)
         {
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]!);
+            var keyConfig = _configuration["Jwt:Key"];
+            if (string.IsNullOrEmpty(keyConfig))
+            {
+                throw new ArgumentNullException("Jwt:Key", "A chave JWT não está configurada.");
+            }
+            var key = Encoding.ASCII.GetBytes(keyConfig);
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -54,10 +59,15 @@ namespace ConsultasMedicas.Controllers
             return tokenHandler.WriteToken(token);
         }
 
-        [HttpPost("registrar")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Registrar([FromBody] Medico medico)
+        [HttpGet]
+        public async Task<IActionResult> Registrar()
+        {
+            await CarregarCombos();
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Registrar(Medico medico)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -72,24 +82,20 @@ namespace ConsultasMedicas.Controllers
             return View("Index", incluirMedico);
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] Medico login)
+        [HttpPost]
+        public async Task<IActionResult> Login(MedicoLoginViewModel login)
         {
             var medico = await _context.Medicos
-                .FirstOrDefaultAsync(m => m.Email == login.Email && m.Senha == login.Senha);
+                .FirstOrDefaultAsync(m => m.Nome == login.Nome && m.Senha == login.Senha);
 
             if (medico == null)
-                return Unauthorized("E-mail ou senha inválidos.");
+                return Unauthorized("Nome ou senha inválidos.");
 
             var token = GerarTokenJWT(medico.Email!, "Medico");
 
-            return Ok(new
-            {
-                token,
-                nome = medico.Nome,
-                email = medico.Email,
-                id = medico.IdMedico
-            });
+            TempData["Token"] = token;
+            return RedirectToAction("Index");
+            
         }
 
         public IActionResult Login()
@@ -99,7 +105,30 @@ namespace ConsultasMedicas.Controllers
 
         public IActionResult Index()
         {
-            return View();
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault(claim => claim.Type == ClaimTypes.NameIdentifier);
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var medico = _context.Medicos.FirstOrDefault(m => m.Email == email);
+
+            if (medico == null)
+            {
+                return NotFound("Médico não encontrado.");
+            }
+
+            return View(medico);
         }
 
         public async Task<IActionResult> Editar(int id)

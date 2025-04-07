@@ -1,6 +1,5 @@
 ﻿using ConsultasMedicas.Models;
 using Microsoft.EntityFrameworkCore;
-using ConsultasMedicas.Models;
 using ConsultasMedicas.Interfaces;
 namespace ConsultasMedicas.Repositories
 {

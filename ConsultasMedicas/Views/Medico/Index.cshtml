@@ -6,36 +6,34 @@
     <h1>Perfil</h1>
     <div class="nome">
         <label asp-for="Nome"></label>
-        <h6>odel.Nome</h6>
+        <h6>@Model.Nome</h6>
     </div>
     <div class="telefone">
         <label asp-for="Telefone"></label>
-        <h6>odel.Telefone</h6>
+        <h6>@Model.Telefone</h6>
     </div>
     <div class="email">
         <label asp-for="Email"></label>
-        <h6>odel.Email</h6>
+        <h6>@Model.Email</h6>
     </div>
     <div class="CRM">
         <label asp-for="CRM"></label>
-        <h6>odel.CRM</h6>
+        <h6>@Model.CRM</h6>
     </div>
     <div class="CPF">
         <label asp-for="CPF"></label>
-        <h6>odel.CPF</h6>
+        <h6>@Model.CPF</h6>
     </div>
     <div class="sexo">
         <label asp-for="Sexo"></label>
-        <h6>odel.Sexo</h6>
+        <h6>@Model.Sexo?.Nome</h6>
     </div>
     <div class="consultorio">
         <label asp-for="Consultorio"></label>
-        <h6>odel.Consultorio</h6>
+        <h6>@Model.Consultorio?.Nome</h6>
     </div>
     <div class="especialidade">
         <label asp-for="Especialidade"></label>
-        <h6>odel.Especialidade</h6>
+        <h6>@Model.Especialidade?.Nome</h6>
     </div>
-    <a class="btn btn-secondary" asp-action="Editar" asp-route="@Model.IdMedico">Editar</a>
-    <a class="btn btn-danger" asp-action="Deletar" asp-route="@Model.IdMedico">Deletar</a>
 </div>

@@ -1,6 +1,8 @@
 using ConsultasMedicas.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using ConsultasMedicas.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -9,7 +11,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-    });
+});
+
+// Registro do serviço ServiceMedico
+builder.Services.AddScoped<ServiceMedico>();
 
 // Configuração de autenticação JWT
 builder.Services.AddAuthentication(options =>
@@ -34,6 +39,7 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero // Remove o atraso padrão de 5 minutos
     };
 });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -51,6 +57,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();
