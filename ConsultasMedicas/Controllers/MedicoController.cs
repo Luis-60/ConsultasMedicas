@@ -196,6 +196,7 @@ namespace ConsultasMedicas.Controllers
             {
                 // Atualizar os dados do médico existente
                 medicoExistente.Nome = medico.Nome;
+                medicoExistente.Senha = medico.Senha;
                 medicoExistente.Telefone = medico.Telefone;
                 medicoExistente.Email = medico.Email;
                 medicoExistente.CPF = medico.CPF;
@@ -206,7 +207,7 @@ namespace ConsultasMedicas.Controllers
 
                 // Salvar as alterações no banco de dados
                 _context.Medicos.Update(medicoExistente);
-                await _context.SaveChangesAsync();
+                await _serviceMedico.RptMedico.AlterarAsync(medicoExistente);
 
                 ViewData["Mensagem"] = "Dados salvos com sucesso.";
                 await CarregarCombos();
@@ -269,9 +270,9 @@ namespace ConsultasMedicas.Controllers
             if (medico != null)
             {
                 _context.Medicos.Remove(medico);
-                await _context.SaveChangesAsync();
+                
             }
-
+            await _context.SaveChangesAsync();
             return RedirectToAction("Index", "Home");
         }
         [HttpGet]

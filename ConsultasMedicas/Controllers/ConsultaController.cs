@@ -85,7 +85,7 @@ namespace ConsultasMedicas.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdConsulta,IdMedico,IdCliente,Horario,Data")] Consulta consulta)
+        public async Task<IActionResult> Edit(int id, Consulta consulta)
         {
             if (id != consulta.IdConsulta)
             {

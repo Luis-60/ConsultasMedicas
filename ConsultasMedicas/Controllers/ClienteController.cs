@@ -196,6 +196,7 @@ namespace ConsultasMedicas.Controllers
             {
                 // Atualizar os dados do cliente existente
                 clienteExistente.Nome = cliente.Nome;
+                clienteExistente.Senha = cliente.Senha;
                 clienteExistente.Telefone = cliente.Telefone;
                 clienteExistente.Email = cliente.Email;
                 clienteExistente.DataNascimento = cliente.DataNascimento;
@@ -204,7 +205,7 @@ namespace ConsultasMedicas.Controllers
 
                 // Salvar as alterações no banco de dados
                 _context.Clientes.Update(clienteExistente);
-                await _context.SaveChangesAsync();
+                await _serviceCliente.RptCliente.AlterarAsync(clienteExistente);
 
                 ViewData["Mensagem"] = "Dados salvos com sucesso.";
                 await CarregarCombos();
@@ -309,5 +310,67 @@ namespace ConsultasMedicas.Controllers
 
             return View(consultas);
         }
+        //[HttpGet]
+        //public async Task<IActionResult> MarcarConsulta()
+        //{
+        //    var viewModel = new ConsultaViewModel
+        //    {
+        //        UFs = new SelectList(await _context.UFs.ToListAsync(), "IdUF", "Nome"),
+        //        Especialidades = new SelectList(Enumerable.Empty<Especialidade>(), "IdEspecialidade", "Nome"),
+        //        Consultorios = new SelectList(Enumerable.Empty<Consultorio>(), "IdConsultorio", "Nome"),
+        //        Medicos = new SelectList(Enumerable.Empty<Medico>(), "IdMedico", "Nome")
+        //    };
+
+        //    return View(viewModel);
+        //}
+
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> MarcarConsulta(ConsultaViewModel viewModel)
+        //{
+        //    if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+        //    {
+        //        return Unauthorized("Token não fornecido.");
+        //    }
+
+        //    var handler = new JwtSecurityTokenHandler();
+        //    var jwtToken = handler.ReadJwtToken(token);
+        //    var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+        //    if (emailClaim == null)
+        //    {
+        //        return Unauthorized("Token inválido.");
+        //    }
+
+        //    var email = emailClaim.Value;
+        //    var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+
+        //    if (cliente == null)
+        //    {
+        //        return NotFound("Cliente não encontrado.");
+        //    }
+
+        //    if (ModelState.IsValid)
+        //    {
+        //        var consulta = new Consulta
+        //        {
+        //            IdCliente = cliente.IdCliente,
+        //            IdMedico = viewModel.IdMedico,
+        //            Data = viewModel.Data,
+        //            Horario = viewModel.Horario
+        //        };
+
+        //        _context.Consultas.Add(consulta);
+        //        await _context.SaveChangesAsync();
+        //        return RedirectToAction(nameof(Index));
+        //    }
+
+        //    viewModel.UFs = new SelectList(await _context.UFs.ToListAsync(), "IdUF", "Nome");
+        //    viewModel.Especialidades = new SelectList(await _context.Especialidades.Where(e => e.IdUF == viewModel.IdUF).ToListAsync(), "IdEspecialidade", "Nome");
+        //    viewModel.Consultorios = new SelectList(await _context.Consultorios.Where(c => c.IdUF == viewModel.IdUF).ToListAsync(), "IdConsultorio", "Nome");
+        //    viewModel.Medicos = new SelectList(await _context.Medicos.Where(m => m.IdEspecialidade == viewModel.IdEspecialidade && m.IdConsultorio == viewModel.IdConsultorio).ToListAsync(), "IdMedico", "Nome");
+
+            //return View(viewModel);
+        
     }
 }
