@@ -21,6 +21,8 @@ public class Consulta
     [Display(Name = "Data")]
     [Required(ErrorMessage = "O campo Data é Obrigatório")]
     [DataType(DataType.Date)]
+
+
     public DateTime Data { get; set; }
     public virtual Medico? Medico { get; set; }
     public virtual Cliente? Cliente { get; set; }

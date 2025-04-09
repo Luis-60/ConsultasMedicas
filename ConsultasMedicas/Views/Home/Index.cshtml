@@ -17,3 +17,21 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+
+        @if (TempData["MensagemSucesso"] != null)
+        {
+            <text>
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Sucesso',
+                            text: 'Médico deletado com sucesso!'
+                        });
+            </text>
+        }
+    </script>
+}

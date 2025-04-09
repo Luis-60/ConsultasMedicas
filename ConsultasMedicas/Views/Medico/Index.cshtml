@@ -40,5 +40,21 @@
     <a asp-action="Deletar" asp-controller="Medico" class="btn btn-danger">Deletar</a>
     <a asp-action="VerConsultas" asp-route-id="@Model.IdMedico" class="btn btn-info">Ver Consultas</a>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        
+        
+        @if (TempData["ErroMedico"] != null)
+        {
+            <text>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro!',
                            text: 'Não é possível deletar este médico porque ele possui consultas vinculadas.'
-                    });
+                    });
+            </text>
+        }
+    </script>
+}

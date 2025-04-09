@@ -152,5 +152,6 @@ namespace ConsultasMedicas.Controllers
         {
             return _context.Consultas.Any(e => e.IdConsulta == id);
         }
+
     }
 }

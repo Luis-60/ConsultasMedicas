@@ -1,38 +1,34 @@
-﻿@* @model ConsultasMedicas.ViewModels.ConsultaViewModel
+﻿@model ConsultasMedicas.ViewModels.ConsultaViewModel
 
 @{
-    Layout = "../Shared/_Layout.cshtml";
-    ViewData["Title"] = "MarcarConsulta";
+    ViewData["Title"] = "Marcar Consulta";
 }
 
-<h2>Marcar Consulta</h2>
+<h1>Marcar Consulta</h1>
 
-<form asp-action="MarcarConsulta" method="post">
+<form asp-action="Create" method="post">
     <div class="form-group">
-        <label asp-for="IdUF" class="control-label">UF</label>
-        <select asp-for="IdUF" class="form-control" asp-items="Model.UFs">
-            <option value="">Selecione uma UF</option>
+        <label for="Consultorio">Consultório</label>
+        <select id="Consultorio" name="IdConsultorio" class="form-control">
+            <option value="">Selecione um consultório</option>
+            @foreach (var consultorio in Model.Consultorios)
+            {
+                <option value="@consultorio.Value">@consultorio.Text</option>
+            }
         </select>
     </div>
 
     <div class="form-group">
-        <label asp-for="IdEspecialidade" class="control-label">Especialidade</label>
-        <select asp-for="IdEspecialidade" class="form-control" asp-items="Model.Especialidades">
-            <option value="">Selecione uma Especialidade</option>
+        <label for="Especialidade">Especialidade</label>
+        <select id="Especialidade" name="NomeEspecialidade" class="form-control">
+            <option value="">Selecione uma especialidade</option>
         </select>
     </div>
 
     <div class="form-group">
-        <label asp-for="IdConsultorio" class="control-label">Consultório</label>
-        <select asp-for="IdConsultorio" class="form-control" asp-items="Model.Consultorios">
-            <option value="">Selecione um Consultorio</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="IdMedico" class="control-label">Médico</label>
-        <select asp-for="IdMedico" class="form-control" asp-items="Model.Medicos">
-            <option value="">Selecione um Médico</option>
+        <label for="Medico">Médico</label>
+        <select id="Medico" name="IdMedico" class="form-control">
+            <option value="">Selecione um médico</option>
         </select>
     </div>
 
@@ -43,51 +39,58 @@
     </div>
 
     <div class="form-group">
-        <label asp-for="Horario" class="control-label">Horario</label>
+        <label asp-for="Horario" class="control-label"></label>
         <input asp-for="Horario" class="form-control" type="time" />
         <span asp-validation-for="Horario" class="text-danger"></span>
     </div>
 
-    <br />
-    <input type="submit" value="Marcar Consulta" class="btn btn-primary" />
+    <button type="submit" class="btn btn-success">
+        <i class="bi bi-calendar-check"></i> Marcar Consulta
+    </button>
 </form>
 
+
+
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <script>
         $(document).ready(function () {
-            $('#IdUF').change(function () {
-                var ufId = $(this).val();
-                $.getJSON('/Cliente/GetEspecialidades', { id: ufId }, function (data) {
-                    var especialidadeSelect = $('#IdEspecialidade');
-                    especialidadeSelect.empty();
-                    especialidadeSelect.append('<option value="">Selecione uma Especialidade</option>');
-                    $.each(data, function (index, item) {
-                        especialidadeSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
-                    });
-                });
 
-                $.getJSON('/Cliente/GetConsultorios', { id: ufId }, function (data) {
-                    var consultorioSelect = $('#IdConsultorio');
-                    consultorioSelect.empty();
-                    consultorioSelect.append('<option value="">Selecione um Consultorio</option>');
-                    $.each(data, function (index, item) {
-                        consultorioSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+            $('#Consultorio').change(function () {
+                var consultorioId = $(this).val();
+                $('#Especialidade').empty().append('<option>Carregando...</option>');
+                $('#Medico').empty().append('<option>Selecione uma especialidade primeiro</option>');
+
+                if (consultorioId) {
+                    $.getJSON('/Cliente/ObterEspecialidadesPorConsultorio', { idConsultorio: consultorioId }, function (data) {
+                        $('#Especialidade').empty().append('<option>Selecione uma especialidade</option>');
+                        $.each(data, function (i, especialidade) {
+                            $('#Especialidade').append('<option value="' + especialidade + '">' + especialidade + '</option>');
+                        });
                     });
-                });
+                }
             });
 
-            $('#IdEspecialidade, #IdConsultorio').change(function () {
-                var especialidadeId = $('#IdEspecialidade').val();
-                var consultorioId = $('#IdConsultorio').val();
-                $.getJSON('/Cliente/GetMedicos', { especialidadeId: especialidadeId, consultorioId: consultorioId }, function (data) {
-                    var medicoSelect = $('#IdMedico');
-                    medicoSelect.empty();
-                    medicoSelect.append('<option value="">Selecione um Médico</option>');
-                    $.each(data, function (index, item) {
-                        medicoSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+            $('#Especialidade').change(function () {
+                var consultorioId = $('#Consultorio').val();
+                var especialidade = $(this).val();
+                $('#Medico').empty().append('<option>Carregando...</option>');
+
+                if (consultorioId && especialidade) {
+                    $.getJSON('/Cliente/ObterMedicosPorConsultorioEspecialidade', {
+                        idConsultorio: consultorioId,
+                        nomeEspecialidade: especialidade
+                    }, function (data) {
+                        $('#Medico').empty().append('<option>Selecione um médico</option>');
+                        $.each(data, function (i, medico) {
+                            $('#Medico').append('<option value="' + medico.idMedico + '">' + medico.nome + '</option>');
+                        });
                     });
-                });
+                }
             });
+
         });
+        
     </script>
-} *@
+}
