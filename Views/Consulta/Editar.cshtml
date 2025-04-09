@@ -1,0 +1,37 @@
+﻿@model Consulta
+
+@{
+    ViewData["Title"] = "Editar Consulta";
+}
+
+<h1>Editar Consulta</h1>
+
+<form asp-action="Edit">
+    <div class="form-group">
+        <label asp-for="IdMedico" class="control-label"></label>
+        <input asp-for="IdMedico" class="form-control" />
+        <span asp-validation-for="IdMedico" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="IdCliente" class="control-label"></label>
+        <input asp-for="IdCliente" class="form-control" />
+        <span asp-validation-for="IdCliente" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Horario" class="control-label"></label>
+        <input asp-for="Horario" class="form-control" />
+        <span asp-validation-for="Horario" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Data" class="control-label"></label>
+        <input asp-for="Data" class="form-control" />
+        <span asp-validation-for="Data" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Salvar" class="btn btn-primary" />
+    </div>
+</form>
+
+<div>
+    <a asp-action="Index" class="btn btn-secondary">Voltar</a>
+</div>

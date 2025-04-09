@@ -1,0 +1,52 @@
+﻿@model IEnumerable<ConsultasMedicas.ViewModels.ConsultaViewModel>
+
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "VerConsultas";
+}
+
+<h2>Consultas do Cliente</h2>
+
+<table id="tabela" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Médico</th>
+            <th>Especialidade</th>
+            <th>Consultório</th>
+            <th>Endereço</th>
+            <th>Data</th>
+            <th>Horário</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var consulta in Model)
+        {
+            <tr>
+                <td>@consulta.NomeCliente</td>
+                <td>@consulta.NomeEspecialidade</td>
+                <td>@consulta.NomeConsultorio</td>
+                <td>@consulta.EnderecoConsultorio</td>
+                <td>@consulta.Data.ToShortDateString()</td>
+                <td>@consulta.Horario</td>
+                <td>
+                    <a asp-action="Editar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-primary btn-sm">Editar</a>
+                    <a asp-action="Deletar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-danger btn-sm">Excluir</a>
+                    <a asp-action="MarcarConsulta" asp-controller="Cliente" class="btn btn-primary btn-sm">Marcar Consulta</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#tabela').DataTable({
+                language: {
+                    url: "https://cdn.datatables.net/plug-ins/2.2.2/i18n/pt-BR.json"
+                }
+            });
+        });
+    </script>
+}
