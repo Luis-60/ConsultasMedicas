@@ -6,7 +6,9 @@
 
 <h1>Editar Consulta</h1>
 
-<form asp-action="Edit">
+<form asp-action="Edit" asp-route-id= "@Model.IdConsulta">
+>
+    <input type="hidden" asp-for="IdConsulta" />
     <div class="form-group">
         <label asp-for="IdMedico" class="control-label"></label>
         <input asp-for="IdMedico" class="form-control" />
@@ -33,5 +35,13 @@
 </form>
 
 <div>
-    <a asp-action="Index" class="btn btn-secondary">Voltar</a>
+    @* <a asp-action="VerConsultas" asp-controller="Cliente" class="btn btn-secondary">Voltar</a> *@
+    <a onclick="voltarParaIndex()" class="btn btn-secondary">Voltar</a>
 </div>
+
+
+<script>
+    function voltarParaIndex() {
+        window.history.back();
+    }
+</script>"

@@ -91,7 +91,12 @@ namespace ConsultasMedicas.Controllers
                 .FirstOrDefaultAsync(c => c.Nome == login.Nome && c.Senha == login.Senha);
 
             if (cliente == null)
-                return Unauthorized("Nome ou senha inválidos.");
+            {
+
+                TempData["erro"] = "Login ou senha inválidos";
+                return RedirectToAction("Login", "Cliente");
+
+            }
 
             var token = GerarTokenJWT(cliente.Email!, "Cliente");
 
@@ -250,30 +255,39 @@ namespace ConsultasMedicas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletarConfirmado()
         {
-            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
-            {
-                return Unauthorized("Token não fornecido.");
+            try {
+                if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+                {
+                    return Unauthorized("Token não fornecido.");
+                }
+
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+                if (emailClaim == null)
+                {
+                    return Unauthorized("Token inválido.");
+                }
+
+                var email = emailClaim.Value;
+                var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+
+                if (cliente != null)
+                {
+                    _context.Clientes.Remove(cliente);
+                    await _context.SaveChangesAsync();
+                }
+                return RedirectToAction("Index", "Home");
             }
-
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var emailClaim = jwtToken.Claims.FirstOrDefault();
-
-            if (emailClaim == null)
-            {
-                return Unauthorized("Token inválido.");
+            catch(Exception ex) 
+            { 
+                TempData["ConsultaOn"] = "Nao foi possivel deletar o usuario, ele tem consultas marcadas";
+                return RedirectToAction("Index", "Home");
             }
+            
 
-            var email = emailClaim.Value;
-            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
-
-            if (cliente != null)
-            {
-                _context.Clientes.Remove(cliente);
-                await _context.SaveChangesAsync();
-            }
-
-            return RedirectToAction("Index", "Home");
+            
         }
         [HttpGet]
         public async Task<IActionResult> VerConsultas(int id)
@@ -308,7 +322,11 @@ namespace ConsultasMedicas.Controllers
 
             if (consultas == null || !consultas.Any())
             {
-                return NotFound("Nenhuma consulta encontrada para este cliente.");
+                TempData["NuloCon"] = "Esse Cliente nao tem consultas, logue novamente e marque uma consulta";
+                return RedirectToAction("index", "Home");
+                
+
+
             }
 
             return View(consultas);

@@ -28,16 +28,12 @@ namespace ConsultasMedicas.Controllers
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var consulta = await _context.Consultas
                 .FirstOrDefaultAsync(m => m.IdConsulta == id);
             if (consulta == null)
-            {
                 return NotFound();
-            }
 
             return View(consulta);
         }
@@ -49,8 +45,6 @@ namespace ConsultasMedicas.Controllers
         }
 
         // POST: Consultas/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdConsulta,IdMedico,IdCliente,Horario,Data")] Consulta consulta)
@@ -68,29 +62,22 @@ namespace ConsultasMedicas.Controllers
         public async Task<IActionResult> Editar(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var consulta = await _context.Consultas.FindAsync(id);
             if (consulta == null)
-            {
                 return NotFound();
-            }
+
             return View(consulta);
         }
 
         // POST: Consultas/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Consulta consulta)
+        public async Task<IActionResult> Edit(int id, [Bind("IdConsulta,IdMedico,IdCliente,Horario,Data")] Consulta consulta)
         {
             if (id != consulta.IdConsulta)
-            {
                 return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
@@ -102,16 +89,15 @@ namespace ConsultasMedicas.Controllers
                 catch (DbUpdateConcurrencyException)
                 {
                     if (!ConsultaExists(consulta.IdConsulta))
-                    {
                         return NotFound();
-                    }
                     else
-                    {
                         throw;
-                    }
                 }
-                return RedirectToAction(nameof(Index));
+
+                TempData["Mensagem"] = "Consulta editada com sucesso!";
+                return RedirectToAction("Index", "Cliente");
             }
+
             return View(consulta);
         }
 
@@ -119,16 +105,12 @@ namespace ConsultasMedicas.Controllers
         public async Task<IActionResult> Deletar(int? id)
         {
             if (id == null)
-            {
                 return NotFound();
-            }
 
             var consulta = await _context.Consultas
                 .FirstOrDefaultAsync(m => m.IdConsulta == id);
             if (consulta == null)
-            {
                 return NotFound();
-            }
 
             return View(consulta);
         }
@@ -140,18 +122,17 @@ namespace ConsultasMedicas.Controllers
         {
             var consulta = await _context.Consultas.FindAsync(id);
             if (consulta != null)
-            {
                 _context.Consultas.Remove(consulta);
-            }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            TempData["Mensagem"] = "Consulta excluída com sucesso!";
+            return RedirectToAction("VerConsultas", "Cliente", new { id = consulta.IdCliente });
+           // return RedirectToAction("Index", "Cliente");
         }
 
         private bool ConsultaExists(int id)
         {
             return _context.Consultas.Any(e => e.IdConsulta == id);
         }
-
     }
 }

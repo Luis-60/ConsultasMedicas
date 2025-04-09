@@ -2,6 +2,7 @@
     ViewData["Title"] = "Perfil";
 }
 @model Cliente
+
 <div class="user-info">
     <h1>Perfil</h1>
     <div class="nome">
@@ -28,27 +29,26 @@
         <label asp-for="Sexo"></label>
         <h6>@Model.Sexo?.Nome</h6>
     </div>
+
     <a asp-action="Editar" asp-controller="Cliente" class="btn btn-primary">Editar</a>
     <a asp-action="Deletar" asp-controller="Cliente" class="btn btn-danger">Deletar</a>
     <a asp-action="VerConsultas" asp-route-id="@Model.IdCliente" class="btn btn-info">Ver Consultas</a>
     <a asp-action="MarcarConsulta" asp-controller="Cliente" class="btn btn-primary btn-sm">Marcar Consulta</a>
-
 </div>
+
 @section Scripts {
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
 
-
-    @if (TempData["CriarSucesso"] != null)
-    {
-        <text>
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Sucesso',
-                                text: 'Consulta marcada com sucesso!'
-                            });
-        </text>
-    }
-</script>
+        @if (TempData["CriarSucesso"] != null)
+        {
+            <text>
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Consulta marcada com sucesso!'
+                    });
+            </text>
+        }
+    </script>
 }
-

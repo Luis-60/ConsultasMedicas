@@ -33,5 +33,25 @@
                         });
             </text>
         }
+        @if (TempData["NuloCon"] != null)
+        {
+            <text>
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Sem Consultas Marcadas',
+                                text: 'Esse Cliente nao tem consultas, logue novamente e marque uma consulta'
+                            });
+            </text>
+        }
+        @if (TempData["ConsultaOn"] != null)
+        {
+            <text>
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Nao foi possivel',
+                                        text: 'Nao foi possivel deletar o usuario, ele tem consultas marcadas'
+                                });
+            </text>
+        }
     </script>
 }

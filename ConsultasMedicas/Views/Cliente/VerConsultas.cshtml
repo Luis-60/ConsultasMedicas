@@ -31,7 +31,11 @@
                 <td>@consulta.Horario</td>
                 <td>
                     <a asp-action="Editar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-primary btn-sm">Editar</a>
-                    <a asp-action="Deletar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-danger btn-sm">Excluir</a>
+                    <form asp-action="Delete" asp-controller="Consulta" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta consulta?');">
+                        <input type="hidden" name="id" value="@consulta.IdConsulta" />
+                        <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                    </form>
+
 
                 </td>
             </tr>
@@ -39,6 +43,7 @@
     </tbody>
 </table>
 <a asp-action="MarcarConsulta" asp-controller="Cliente" class="btn btn-primary btn-sm">Marcar Consulta</a>
+
 
 @section Scripts {
     <script>
@@ -66,6 +71,20 @@
                             });
         </text>
     }
+</script>
+<script>
+        @if (TempData["Mensagem"] != null)
+        {
+            <text>
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Sucesso',
+                        text: 'Consulta excluída com sucesso!'
+                    });
+            </text>
+        }
+
+
 </script>
 
 }

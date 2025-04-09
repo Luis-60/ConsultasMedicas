@@ -30,3 +30,19 @@
         </div>
     </div>
 </form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        @if (TempData["erro"] != null)
+        {
+            <text>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro!',
+                        text: 'Login ou senha inválidos'
+                    });
+            </text>
+        }
+    </script>
+}

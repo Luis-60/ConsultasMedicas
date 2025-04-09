@@ -90,7 +90,14 @@ namespace ConsultasMedicas.Controllers
                 .FirstOrDefaultAsync(m => m.Nome == login.Nome && m.Senha == login.Senha);
 
             if (medico == null)
-                return Unauthorized("Nome ou senha inválidos.");
+            {
+                
+                TempData["erro"] = "Login ou senha inválidos";
+                return RedirectToAction("Login", "Medico"); 
+                
+            }
+
+                
 
             var token = GerarTokenJWT(medico.Email!, "Medico");
 
