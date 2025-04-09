@@ -1,0 +1,53 @@
+﻿@model Consultorio
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "Criar Consultório";
+}
+
+<form id="formConsultorio" asp-action="Create" method="post">
+    <div class="form-group">
+        <label for="IdUF">UF</label>
+        <select name="IdUF" id="IdUF" class="form-select" required>
+            <option value="">Selecione uma UF</option>
+            @foreach (var uf in ViewBag.UFs)
+            {
+                <option value="@uf.IdUF">@uf.Nome</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="Cidade">Cidade</label>
+        <input type="text" name="Cidade" class="form-control" placeholder="Digite a cidade" required />
+    </div>
+
+    <div class="form-group">
+        <label for="Endereco">Endereço</label>
+        <input type="text" name="Endereco" class="form-control" placeholder="Digite o endereço" required />
+    </div>
+
+    <div class="form-group">
+        <label for="Nome">Consultório</label>
+        <input type="text" name="Nome" class="form-control" placeholder="Digite o nome do consultório" required />
+    </div>
+
+    <p></p>
+
+    <button type="button" class="btn btn-primary" onclick="confirmarEnvio()">Cadastrar</button>
+</form>
+
+<script>
+    function confirmarEnvio() {
+        Swal.fire({
+            title: 'Confirmação',
+            text: "Salvo com sucesso!",
+            icon: 'success',
+            showCancelButton: false,
+            confirmButtonText: 'Fechar',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('formConsultorio').submit();
+            }
+        });
+    }
+</script>

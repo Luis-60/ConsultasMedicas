@@ -1,0 +1,51 @@
+﻿@model Consultorio
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "Deletar Consultório";
+}
+
+<h1>Deletar Consultório</h1>
+
+<div>
+    <h4>Tem certeza que deseja excluir este consultório?</h4>
+    <dl class="row">
+        <dt class="col-sm-2">Nome</dt>
+        <dd class="col-sm-10">@Model.Nome</dd>
+
+        <dt class="col-sm-2">Endereço</dt>
+        <dd class="col-sm-10">@Model.Endereco</dd>
+
+        <dt class="col-sm-2">Cidade</dt>
+        <dd class="col-sm-10">@Model.Cidade</dd>
+
+        <dt class="col-sm-2">UF</dt>
+        <dd class="col-sm-10">@Model.UF?.Nome</dd>
+    </dl>
+
+    <form id="deleteForm" asp-action="Deletar" method="post">
+        <input type="hidden" asp-for="IdConsultorio" />
+        <button type="button" class="btn btn-danger" id="confirmDeleteButton">Excluir</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('confirmDeleteButton').addEventListener('click', function () {
+            Swal.fire({
+                title: 'Tem certeza?',
+                text: "Você não poderá reverter esta ação!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sim, excluir!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        });
+    </script>
+}
