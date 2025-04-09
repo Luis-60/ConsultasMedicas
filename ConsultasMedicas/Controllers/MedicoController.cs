@@ -250,30 +250,47 @@ namespace ConsultasMedicas.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletarConfirmado()
         {
-            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            try
             {
-                return Unauthorized("Token não fornecido.");
-            }
+                if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+                {
+                    return Unauthorized("Token não fornecido.");
+                }
 
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-            var emailClaim = jwtToken.Claims.FirstOrDefault();
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
+                var emailClaim = jwtToken.Claims.FirstOrDefault();
 
-            if (emailClaim == null)
-            {
-                return Unauthorized("Token inválido.");
-            }
+                if (emailClaim == null)
+                {
+                    return Unauthorized("Token inválido.");
+                }
 
-            var email = emailClaim.Value;
-            var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
+                var email = emailClaim.Value;
+                var medico = await _context.Medicos.FirstOrDefaultAsync(m => m.Email == email);
 
-            if (medico != null)
-            {
-                _context.Medicos.Remove(medico);
+                if (medico != null)
+                {
+                    _context.Medicos.Remove(medico);
+                    
+
+                }
+                await _context.SaveChangesAsync();
+                TempData["ErroMedico"] = null;
+                TempData["MensagemSucesso"] = "Médico deletado com sucesso!";
+                return RedirectToAction("Index", "Home");
                 
+
             }
-            await _context.SaveChangesAsync();
-            return RedirectToAction("Index", "Home");
+            catch (Exception ex)
+            {
+                TempData["MensagemSucesso"] = null;
+                TempData["ErroMedico"] = "Não é possível deletar este médico porque ele possui consultas vinculadas.";
+                return RedirectToAction("Index", "Medico");
+            }
+
+             
+
         }
         [HttpGet]
         public async Task<IActionResult> VerConsultas(int id)

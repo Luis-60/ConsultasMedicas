@@ -11,6 +11,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using ConsultasMedicas.ViewModel;
 using ConsultasMedicas.ViewModels;
+using ConsultasMedicas.Repositories;
 
 namespace ConsultasMedicas.Controllers
 {
@@ -95,6 +96,7 @@ namespace ConsultasMedicas.Controllers
             var token = GerarTokenJWT(cliente.Email!, "Cliente");
 
             // Armazenar o token em um cookie
+            Response.Cookies.Delete("AuthToken");
             Response.Cookies.Append("AuthToken", token, new CookieOptions
             {
                 HttpOnly = true,
@@ -295,6 +297,7 @@ namespace ConsultasMedicas.Controllers
                                               TelefoneCliente = c.Cliente.Telefone,
                                               IdEspecialidade = c.Medico.Especialidade.IdEspecialidade,
                                               NomeEspecialidade = c.Medico.Especialidade.Nome,
+                                              NomeMedico = c.Medico.Nome,
                                               IdConsultorio = c.Medico.Consultorio.IdConsultorio,
                                               NomeConsultorio = c.Medico.Consultorio.Nome,
                                               EnderecoConsultorio = c.Medico.Consultorio.Endereco,
@@ -310,6 +313,98 @@ namespace ConsultasMedicas.Controllers
 
             return View(consultas);
         }
+
+        public IActionResult MarcarConsulta()
+        {
+            var viewModel = new ConsultaViewModel
+            {
+                UFs = _context.Consultorios
+                    .Select(c => c.UF)
+                    .Distinct()
+                    .Select(uf => new SelectListItem
+                    {
+                        Text = uf.Nome,
+                        Value = uf.IdUF.ToString()
+                    }).ToList(),
+
+                Especialidades = _context.Especialidades
+                    .Select(e => new SelectListItem { Text = e.Nome, Value = e.IdEspecialidade.ToString() }),
+
+                Consultorios = _context.Consultorios
+                    .Select(c => new SelectListItem { Text = c.Nome, Value = c.IdConsultorio.ToString() }),
+
+                Medicos = _context.Medicos
+                    .Select(m => new SelectListItem { Text = m.Nome, Value = m.IdMedico.ToString() }),
+
+                Horarios = Enumerable.Range(6, 25) // de 6:00 até 18:00 de meia em meia hora
+                    .Select(h => new SelectListItem
+                    {
+                        Text = $"{h}:00",
+                        Value = new TimeSpan(h, 0, 0).ToString()
+                    }),
+
+
+            };
+
+            return View(viewModel);
+
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(ConsultaViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                
+                
+                model.Especialidades = _context.Especialidades
+                    .Select(e => new SelectListItem { Value = e.Nome, Text = e.Nome })
+                    .ToList();
+
+                model.Consultorios = new List<SelectListItem>();
+                model.Medicos = new List<SelectListItem>();
+                return View("MarcarConsulta", model);
+            }
+
+            // Aqui seria o ponto de obter o ID do cliente logado via JWT
+            if (!Request.Cookies.TryGetValue("AuthToken", out var token) || string.IsNullOrEmpty(token))
+            {
+                return Unauthorized("Token não fornecido.");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            var emailClaim = jwtToken.Claims.FirstOrDefault();
+
+            if (emailClaim == null)
+            {
+                return Unauthorized("Token inválido.");
+            }
+
+            var email = emailClaim.Value;
+            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.Email == email);
+            if (cliente == null)
+            {
+                return NotFound("Cliente não encontrado.");
+            }
+
+            var consulta = new Consulta
+            {
+                IdMedico = model.IdMedico,
+                Data = model.Data.Date,
+                Horario = model.Horario,
+                IdCliente = cliente.IdCliente
+            };
+
+            _context.Consultas.Add(consulta);
+            await _context.SaveChangesAsync(); // aqui está o uso correto do await
+            TempData["Sucesso"] = "Consulta marcada com sucesso";
+
+            return RedirectToAction("VerConsultas", "Cliente", new { id = cliente.IdCliente });
+        }
+
+
+
         //[HttpGet]
         //public async Task<IActionResult> MarcarConsulta()
         //{
@@ -370,7 +465,80 @@ namespace ConsultasMedicas.Controllers
         //    viewModel.Consultorios = new SelectList(await _context.Consultorios.Where(c => c.IdUF == viewModel.IdUF).ToListAsync(), "IdConsultorio", "Nome");
         //    viewModel.Medicos = new SelectList(await _context.Medicos.Where(m => m.IdEspecialidade == viewModel.IdEspecialidade && m.IdConsultorio == viewModel.IdConsultorio).ToListAsync(), "IdMedico", "Nome");
 
-            //return View(viewModel);
-        
-    }
+        //return View(viewModel);
+
+        //  [HttpGet]
+        // public JsonResult ObterConsultoriosPorUF(int idUF)
+        //  {
+        //    var consultorios = _context.Consultorios
+        //      .Where(c => c.IdUF == idUF)
+        //    .Select(c => new {
+        //      c.IdConsultorio,
+        //     c.Nome
+        //  }).ToList();
+
+        //   return Json(consultorios);
+        //  }
+
+        //public JsonResult ObterConsultoriosPorUFEspecialidade(int idUF, string nomeEspecialidade)
+        //{
+        //  var consultorios = _context.Medicos
+        //    .Where(m => m.Consultorio.IdUF == idUF && m.Especialidade.Nome == nomeEspecialidade)
+        //  .Select(m => new {
+        //    m.Consultorio.IdConsultorio,
+        //  m.Consultorio.Nome
+        // })
+        // .Distinct()
+        // .ToList();
+
+        //    return Json(consultorios);
+        //}
+        [HttpGet]
+
+        public JsonResult ObterTodosConsultorios()
+        {
+            var consultorios = _context.Consultorios
+                .Select(c => new
+                {
+                    idConsultorio = c.IdConsultorio,
+                    nome = c.Nome
+                })
+                .ToList();
+
+            return Json(consultorios);
+        }
+
+
+
+        [HttpGet]
+        public JsonResult ObterEspecialidadesPorConsultorio(int idConsultorio)
+        {
+            var especialidades = _context.Medicos
+                .Where(m => m.IdConsultorio == idConsultorio)
+                .Select(m => m.Especialidade.Nome)
+                .Distinct()
+                .ToList();
+
+            return Json(especialidades);
+        }
+
+        [HttpGet]
+        public JsonResult ObterMedicosPorConsultorioEspecialidade(int idConsultorio, string nomeEspecialidade)
+        {
+            var medicos = _context.Medicos
+                .Where(m => m.IdConsultorio == idConsultorio && m.Especialidade.Nome == nomeEspecialidade)
+                .Select(m => new {
+                    m.IdMedico,
+                    m.Nome
+                })
+                .ToList();
+
+            return Json(medicos);
+        }
+
+
+    };
+
+
+
 }

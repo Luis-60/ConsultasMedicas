@@ -23,7 +23,7 @@
         @foreach (var consulta in Model)
         {
             <tr>
-                <td>@consulta.NomeCliente</td>
+                <td>@consulta.NomeMedico</td>
                 <td>@consulta.NomeEspecialidade</td>
                 <td>@consulta.NomeConsultorio</td>
                 <td>@consulta.EnderecoConsultorio</td>
@@ -32,12 +32,13 @@
                 <td>
                     <a asp-action="Editar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-primary btn-sm">Editar</a>
                     <a asp-action="Deletar" asp-controller="Consulta" asp-route-id="@consulta.IdConsulta" class="btn btn-danger btn-sm">Excluir</a>
-                    <a asp-action="MarcarConsulta" asp-controller="Cliente" class="btn btn-primary btn-sm">Marcar Consulta</a>
+
                 </td>
             </tr>
         }
     </tbody>
 </table>
+<a asp-action="MarcarConsulta" asp-controller="Cliente" class="btn btn-primary btn-sm">Marcar Consulta</a>
 
 @section Scripts {
     <script>
@@ -48,5 +49,23 @@
                 }
             });
         });
+
     </script>
+   
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+
+
+    @if (TempData["Sucesso"] != null)
+    {
+        <text>
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Sucesso',
+                                text: 'Consulta marcada com sucesso!'
+                            });
+        </text>
+    }
+</script>
+
 }
