@@ -1,0 +1,60 @@
+﻿@model Consultorio
+
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "Editar Consultório";
+}
+
+<h1>Editar Consultório</h1>
+
+<form id="editForm" asp-action="Editar" method="post">
+    <input type="hidden" asp-for="IdConsultorio" />
+
+    <div class="form-group">
+        <label asp-for="Nome" class="form-label"></label>
+        <input asp-for="Nome" class="form-control" />
+        <span asp-validation-for="Nome" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Endereco" class="form-label"></label>
+        <input asp-for="Endereco" class="form-control" />
+        <span asp-validation-for="Endereco" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Cidade" class="form-label"></label>
+        <input asp-for="Cidade" class="form-control" />
+        <span asp-validation-for="Cidade" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IdUF" class="form-label">UF</label>
+        <select asp-for="IdUF" asp-items="@(new SelectList(ViewBag.UFs, "IdUF", "Nome"))" class="form-select"></select>
+        <span asp-validation-for="IdUF" class="text-danger"></span>
+    </div>
+
+    <button type="button" class="btn btn-primary" id="confirmEditButton">Salvar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <script>
+        document.getElementById('confirmEditButton').addEventListener('click', function () {
+            Swal.fire({
+                title: 'Confirmar Alterações',
+                text: "Deseja salvar as alterações feitas neste consultório?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sim, salvar!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('editForm').submit();
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,169 @@
+﻿@model Medico
+@{
+	Layout = "../Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "Cadastro Médico";
+}
+
+
+<form asp-controller="Medico" asp-action="Registrar" method="post">
+	<div class="d-flex flex-column gap-3">
+		<h1>Se Cadastrar</h1>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="Nome" class="form-label"></label>
+			</div>
+			<div>
+				<input type="text" asp-for="Nome" class="form-control"
+					placeholder="Insira seu Nome" required />
+				<span asp-validation-for="Nome" class="text-danger"></span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="Senha" class="form-label"></label>
+			</div>
+			<div>
+				<input type="password" asp-for="Senha" class="form-control"
+					placeholder="Insira sua Senha" required />
+				<span asp-validation-for="Senha" class="text-danger"></span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="Telefone" class="form-label"></label>
+			</div>
+			<div>
+				<input type="text" asp-for="Telefone" class="form-control"
+					   placeholder="(XX) XXXXX-XXXX"
+					   oninput="formatPhoneNumber(this)"
+					   maxlength="15"
+					   required />
+				<span asp-validation-for="Telefone" class="text-danger"></span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="Email" class="form-label"></label>
+			</div>
+			<div>
+				<input type="email" asp-for="Email" class="form-control"
+					placeholder="Insira seu Email" required />
+				<span asp-validation-for="Email" class="text-danger"></span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="CRM" class="form-label"></label>
+			</div>
+			<div>
+				<input type="text" asp-for="CRM" class="form-control"
+					oninput="formatCRMNumber(this)"
+					placeholder="CRM/UF 000000"
+					pattern="^CRM\/[A-Z]{2}\s\d{6}$"
+					title="Formato esperado: CRM/UF 000000" required />
+				<span asp-validation-for="CRM" class="text-danger"></span>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="CPF" class="form-label"></label>
+			</div>
+			<div>
+				<input type="text" asp-for="CPF" class="form-control"
+					oninput="formatCPFNumber(this)"
+					placeholder="000.000.000-00"
+					pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+					title="Formato esperado: 000.000.000-00" required />
+				<span asp-validation-for="CPF" class="text-danger"></span>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md">
+				<label asp-for="IdSexo" class="form-label"></label>
+			</div>
+			<div>
+				<select asp-for="IdSexo" asp-items="@ViewBag.Sexo" class="form-select">
+					<option value="">Selecione um Sexo</option>
+				</select>
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="IdEspecialidade" class="form-label"></label>
+			</div>
+			<div>
+				<select asp-for="IdEspecialidade" asp-items="@ViewBag.Especialidade" class="form-select">
+					<option value="">Selecione uma Especialidade</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<div class="col-md-2">
+				<label asp-for="IdConsultorio" class="form-label"></label>
+			</div>
+			<div>
+				<select asp-for="IdConsultorio" asp-items="@ViewBag.Consultorio" class="form-select">
+					<option value="">Selecione um Consultório</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<input type="submit" value="Cadastrar" class="btn btn-primary" />
+		</div>
+	</div>
+</form>
+
+@section Scripts {
+	<script>
+		function formatCPFNumber(i) {
+			var v = i.value.replace(/\D/g, ""); // Remove tudo que não for número
+
+			if (v.length > 11) v = v.substring(0, 11); // Limita a 11 caracteres
+
+			if (v.length <= 3) {
+				i.value = v;
+			} else if (v.length <= 6) {
+				i.value = `${v.substring(0, 3)}.${v.substring(3)}`;
+			} else if (v.length <= 9) {
+				i.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6)}`;
+			} else {
+				i.value = `${v.substring(0, 3)}.${v.substring(3, 6)}.${v.substring(6, 9)}-${v.substring(9)}`;
+			}
+		}
+
+		function formatPhoneNumber(i) {
+			var v = i.value.replace(/\D/g, ""); // Remove tudo que não for número
+
+			if (v.length > 11) v = v.substring(0, 11); // Limita a 11 caracteres
+
+			if (v.length <= 2) {
+				i.value = `(${v}`;
+			} else if (v.length <= 7) {
+				i.value = `(${v.substring(0, 2)}) ${v.substring(2)}`;
+			} else {
+				i.value = `(${v.substring(0, 2)}) ${v.substring(2, 7)}-${v.substring(7)}`;
+			}
+		}
+		function formatCRMNumber(i) {
+			var v = i.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); // Remove caracteres inválidos e força maiúsculas
+
+			if (v.length > 11) v = v.substring(0, 11); // Limita a 8 caracteres (CRM + UF + 6 dígitos)
+
+			if (v.length <= 3) {
+				i.value = `CRM/${v}`;
+			} else {
+				i.value = `CRM/${v.substring(3, 5)} ${v.substring(5)}`;
+			}
+		}
+
+	</script>
+}
+

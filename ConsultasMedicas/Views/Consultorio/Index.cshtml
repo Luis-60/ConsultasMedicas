@@ -1,0 +1,68 @@
+﻿@model IEnumerable<Consultorio>
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "Lista de Consultórios";
+}
+
+<h1>Lista de Consultórios</h1>
+
+<div class="mb-3">
+    <a asp-action="CriarConsultorio" class="btn btn-primary">Cadastrar Novo Consultório</a>
+</div>
+
+<table id="consultoriosTable" class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Endereço</th>
+            <th>Cidade</th>
+            <th>UF</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var consultorio in Model)
+        {
+            <tr>
+                <td>@consultorio.Nome</td>
+                <td>@consultorio.Endereco</td>
+                <td>@consultorio.Cidade</td>
+                <td>@consultorio.UF?.Nome</td>
+                <td>
+                    <a asp-action="Editar" asp-route-id="@consultorio.IdConsultorio" class="btn btn-warning btn-sm">Editar</a>
+                    <a asp-action="Deletar" asp-route-id="@consultorio.IdConsultorio" class="btn btn-danger btn-sm">Deletar</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#consultoriosTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'
+                }
+            });
+        });
+
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+
+        @if (TempData["ErroConsultorio"] != null)
+        {
+            <text>
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Impossivel excluir Consultório',
+                                        text: 'Não é possível deletar este consultório porque ele possui médicos vinculados.'
+                                    });
+            </text>
+        }
+    </script>
+    </script>
+}

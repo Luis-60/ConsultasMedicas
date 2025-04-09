@@ -1,0 +1,93 @@
+﻿@* @model ConsultasMedicas.ViewModels.ConsultaViewModel
+
+@{
+    Layout = "../Shared/_Layout.cshtml";
+    ViewData["Title"] = "MarcarConsulta";
+}
+
+<h2>Marcar Consulta</h2>
+
+<form asp-action="MarcarConsulta" method="post">
+    <div class="form-group">
+        <label asp-for="IdUF" class="control-label">UF</label>
+        <select asp-for="IdUF" class="form-control" asp-items="Model.UFs">
+            <option value="">Selecione uma UF</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IdEspecialidade" class="control-label">Especialidade</label>
+        <select asp-for="IdEspecialidade" class="form-control" asp-items="Model.Especialidades">
+            <option value="">Selecione uma Especialidade</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IdConsultorio" class="control-label">Consultório</label>
+        <select asp-for="IdConsultorio" class="form-control" asp-items="Model.Consultorios">
+            <option value="">Selecione um Consultorio</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="IdMedico" class="control-label">Médico</label>
+        <select asp-for="IdMedico" class="form-control" asp-items="Model.Medicos">
+            <option value="">Selecione um Médico</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Data" class="control-label"></label>
+        <input asp-for="Data" class="form-control" type="date" />
+        <span asp-validation-for="Data" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Horario" class="control-label">Horario</label>
+        <input asp-for="Horario" class="form-control" type="time" />
+        <span asp-validation-for="Horario" class="text-danger"></span>
+    </div>
+
+    <br />
+    <input type="submit" value="Marcar Consulta" class="btn btn-primary" />
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#IdUF').change(function () {
+                var ufId = $(this).val();
+                $.getJSON('/Cliente/GetEspecialidades', { id: ufId }, function (data) {
+                    var especialidadeSelect = $('#IdEspecialidade');
+                    especialidadeSelect.empty();
+                    especialidadeSelect.append('<option value="">Selecione uma Especialidade</option>');
+                    $.each(data, function (index, item) {
+                        especialidadeSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+                    });
+                });
+
+                $.getJSON('/Cliente/GetConsultorios', { id: ufId }, function (data) {
+                    var consultorioSelect = $('#IdConsultorio');
+                    consultorioSelect.empty();
+                    consultorioSelect.append('<option value="">Selecione um Consultorio</option>');
+                    $.each(data, function (index, item) {
+                        consultorioSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+                    });
+                });
+            });
+
+            $('#IdEspecialidade, #IdConsultorio').change(function () {
+                var especialidadeId = $('#IdEspecialidade').val();
+                var consultorioId = $('#IdConsultorio').val();
+                $.getJSON('/Cliente/GetMedicos', { especialidadeId: especialidadeId, consultorioId: consultorioId }, function (data) {
+                    var medicoSelect = $('#IdMedico');
+                    medicoSelect.empty();
+                    medicoSelect.append('<option value="">Selecione um Médico</option>');
+                    $.each(data, function (index, item) {
+                        medicoSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+                    });
+                });
+            });
+        });
+    </script>
+} *@
