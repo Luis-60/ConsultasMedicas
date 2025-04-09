@@ -40,3 +40,5 @@
     <a asp-action="Deletar" asp-controller="Medico" class="btn btn-danger">Deletar</a>
     <a asp-action="VerConsultas" asp-route-id="@Model.IdMedico" class="btn btn-info">Ver Consultas</a>
 </div>
+                           text: 'Não é possível deletar este médico porque ele possui consultas vinculadas.'
+                    });
