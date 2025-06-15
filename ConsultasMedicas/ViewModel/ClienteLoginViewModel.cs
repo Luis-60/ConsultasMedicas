@@ -3,11 +3,10 @@
 namespace ConsultasMedicas.ViewModel
 {
     public class ClienteLoginViewModel
-   {
-        [Required(ErrorMessage = "O campo Nome é Obrigatório")]
-        [MaxLength(255)]
-        [Display(Name = "Nome")]
-        public string? Nome { get; set; }
+   {        [Required(ErrorMessage = "O campo Email é Obrigatório")]
+        [EmailAddress(ErrorMessage = "Email inválido")]
+        [Display(Name = "Email")]
+        public string? Email { get; set; }
 
         [Required(ErrorMessage = "O campo Senha é Obrigatório")]
         [MaxLength(48)]

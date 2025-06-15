@@ -82,21 +82,32 @@ namespace ConsultasMedicas.Controllers
             await CarregarCombos();
 
             return View("Index", incluirCliente);
-        }
-
-        [HttpPost]
+        }        [HttpPost]
         public async Task<IActionResult> Login(ClienteLoginViewModel login)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             var cliente = await _context.Clientes
-                .FirstOrDefaultAsync(c => c.Nome == login.Nome && c.Senha == login.Senha);
+                .FirstOrDefaultAsync(c => c.Email == login.Email && c.Senha == login.Senha);
 
             if (cliente == null)
             {
-
-                TempData["erro"] = "Login ou senha inválidos";
-                return RedirectToAction("Login", "Cliente");
-
+                return BadRequest(new { message = "Email ou senha inválidos" });
             }
+
+            var jwtToken = GerarTokenJWT(cliente.Email!, "Cliente");
+
+            Response.Headers["Authorization"] = $"Bearer {jwtToken}";
+
+            return Ok(new { 
+                token = jwtToken,
+                cliente = new { 
+                    id = cliente.IdCliente, 
+                    nome = cliente.Nome,
+                    email = cliente.Email
+                }
+            });
 
             var token = GerarTokenJWT(cliente.Email!, "Cliente");
 

@@ -6,10 +6,16 @@ import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
+import LoginMedico from './pages/LoginMedico';
+import MedicoConsultas from './pages/MedicoConsultas';
+import MedicoEditarConsulta from './pages/MedicoEditarConsulta';
+import MedicoPerfil from './pages/MedicoPerfil';
+import RegisterMedico from './pages/RegisterMedico';
+import RegisterCliente from './pages/RegisterCliente';
 import Profile from './pages/Profile';
 import Appointments from './pages/Appointments';
 import AgendarConsulta from './pages/AgendarConsulta';
+import EditarConsulta from './pages/EditarConsulta';
 import './App.css';
 
 const AppContent = () => {
@@ -22,10 +28,16 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/cadastro" element={<Register />} />
+          <Route path="/login-medico" element={<LoginMedico />} />
+          <Route path="/medico/consultas" element={<MedicoConsultas />} />
+          <Route path="/medico/perfil" element={<MedicoPerfil />} />
+          <Route path="/medico/editar-consulta/:id" element={<MedicoEditarConsulta />} />
+          <Route path="/cadastro" element={<RegisterCliente />} />
+          <Route path="/cadastro-medico" element={<RegisterMedico />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/consultas" element={<Appointments />} />
           <Route path="/agendar-consulta" element={<AgendarConsulta />} />
+          <Route path="/editar-consulta/:id" element={<EditarConsulta />} />
         </Routes>
       </Container>
     </div>

@@ -20,18 +20,18 @@ namespace ConsultasMedicas.Controllers
             _context = context;
         }
 
-        // GET: api/ClientesAPI
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Cliente>>> GetClientes()
         {
             return await _context.Clientes.ToListAsync();
         }
 
-        // GET: api/ClientesAPI/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Cliente>> GetCliente(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
+            var cliente = await _context.Clientes
+                .Include(c => c.Sexo)
+                .FirstOrDefaultAsync(c => c.IdCliente == id);
 
             if (cliente == null)
             {
@@ -41,49 +41,105 @@ namespace ConsultasMedicas.Controllers
             return cliente;
         }
 
-        // PUT: api/ClientesAPI/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCliente(int id, Cliente cliente)
+        [HttpGet("login")]
+        public async Task<ActionResult<Cliente>> Login([FromQuery] string email, [FromQuery] string senha)
         {
-            if (id != cliente.IdCliente)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(cliente).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(senha))
+                {
+                    return BadRequest("Email e senha são obrigatórios");
+                }
+
+                var cliente = await _context.Clientes
+                    .Include(c => c.Sexo)
+                    .FirstOrDefaultAsync(c => c.Email == email);
+
+                if (cliente == null)
+                {
+                    return NotFound("Cliente não encontrado");
+                }
+
+                if (cliente.Senha != senha)
+                {
+                    return BadRequest("Senha incorreta");
+                }
+
+                return Ok(cliente);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!ClienteExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Erro interno: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/ClientesAPI
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> AtualizarCliente(int id, [FromBody] Cliente clienteAtualizado)
         {
-            _context.Clientes.Add(cliente);
-            await _context.SaveChangesAsync();
+            try
+            {
+                var cliente = await _context.Clientes.FindAsync(id);
+                if (cliente == null)
+                {
+                    return NotFound("Cliente não encontrado");
+                }
 
-            return CreatedAtAction("GetCliente", new { id = cliente.IdCliente }, cliente);
+                cliente.Nome = clienteAtualizado.Nome;
+                cliente.Telefone = new string(clienteAtualizado.Telefone?.Where(char.IsDigit).ToArray() ?? Array.Empty<char>());
+                
+                if (!string.IsNullOrEmpty(clienteAtualizado.Senha))
+                {
+                    cliente.Senha = clienteAtualizado.Senha;
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(cliente);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Erro ao atualizar: {ex.Message}");
+            }
         }
 
-        // DELETE: api/ClientesAPI/5
+        [HttpPost]
+        public async Task<ActionResult<Cliente>> PostCliente([FromBody] Cliente cliente)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    var modelErrors = string.Join("; ", ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage));
+                    return BadRequest($"Validação falhou: {modelErrors}");
+                }
+
+                // Validação básica
+                if (string.IsNullOrEmpty(cliente.Nome) || 
+                    string.IsNullOrEmpty(cliente.Email) || 
+                    string.IsNullOrEmpty(cliente.CPF) || 
+                    string.IsNullOrEmpty(cliente.Senha))
+                {
+                    return BadRequest("Todos os campos obrigatórios devem ser preenchidos");
+                }
+
+                // Limpa CPF e Telefone
+                cliente.CPF = new string(cliente.CPF.Where(char.IsDigit).ToArray());
+                cliente.Telefone = new string(cliente.Telefone?.Where(char.IsDigit).ToArray() ?? Array.Empty<char>());
+
+                // Salva o cliente
+                _context.Clientes.Add(cliente);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetCliente), new { id = cliente.IdCliente }, cliente);
+            }
+            catch (Exception ex)
+            {
+                var message = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, $"Erro interno: {message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCliente(int id)
         {
@@ -97,40 +153,6 @@ namespace ConsultasMedicas.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        // GET: api/ClientesAPI/login
-        [HttpGet("login")]
-        public async Task<ActionResult<Cliente>> Login([FromQuery] string email, [FromQuery] string senha)
-        {
-            Console.WriteLine($"Tentativa de login - Email: {email}");
-            
-            var cliente = await _context.Clientes
-                .AsNoTracking() // Para melhor performance
-                .FirstOrDefaultAsync(c => c.Email == email && c.Senha == senha);
-
-            if (cliente == null)
-            {
-                // Verificar se o email existe para dar uma mensagem mais específica
-                var emailExists = await _context.Clientes
-                    .AsNoTracking()
-                    .AnyAsync(c => c.Email == email);
-
-                if (emailExists)
-                {
-                    Console.WriteLine("Email encontrado, mas senha incorreta");
-                    return BadRequest(new { message = "Senha incorreta" });
-                }
-                
-                Console.WriteLine("Email não encontrado");
-                return NotFound(new { message = "Email não encontrado" });
-            }
-
-            Console.WriteLine($"Login bem-sucedido para o cliente: {cliente.Nome}");
-
-            // Por segurança, não retornar a senha
-            cliente.Senha = null;
-            return cliente;
         }
 
         private bool ClienteExists(int id)

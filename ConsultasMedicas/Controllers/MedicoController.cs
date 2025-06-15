@@ -12,8 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
 
 namespace ConsultasMedicas.Controllers
-{
-    public class MedicoController : Controller
+{    public class MedicoController : Controller
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
@@ -24,18 +23,40 @@ namespace ConsultasMedicas.Controllers
             _serviceMedico = medico;
             _context = context;
             _configuration = configuration;
-        }
-
-        private async Task CarregarCombos()
+        }        private async Task CarregarCombos()
         {
-            ViewData["Consultorio"] = new SelectList(await _serviceMedico.RptConsultorio.ListarTodosAsync(), "IdConsultorio", "Nome");
-            ViewData["Sexo"] = new SelectList(await _serviceMedico.RptSexo.ListarTodosAsync(), "IdSexo", "Nome");
-            ViewData["Especialidade"] = new SelectList(await _serviceMedico.RptEspecialidade.ListarTodosAsync(), "IdEspecialidade", "Nome");
-            ViewData["UF"] = new SelectList(await _serviceMedico.RptUF.ListarTodosAsync(), "IdUF", "Nome");
-        }
+            try 
+            {
+                var consultorios = await _serviceMedico.RptConsultorio.ListarTodosAsync() ?? new List<Consultorio>();
+                var sexos = await _serviceMedico.RptSexo.ListarTodosAsync() ?? new List<Sexo>();
+                var especialidades = await _serviceMedico.RptEspecialidade.ListarTodosAsync() ?? new List<Especialidade>();
+                var ufs = await _serviceMedico.RptUF.ListarTodosAsync() ?? new List<UF>();
 
-        private string GerarTokenJWT(string email, string role)
+                ViewData["Consultorio"] = new SelectList(consultorios, "IdConsultorio", "Nome");
+                ViewData["Sexo"] = new SelectList(sexos, "IdSexo", "Nome");
+                ViewData["Especialidade"] = new SelectList(especialidades, "IdEspecialidade", "Nome");
+                ViewData["UF"] = new SelectList(ufs, "IdUF", "Nome");
+            }
+            catch (Exception)
+            {
+                // Em caso de erro ao carregar os dados, inicializa com listas vazias
+                ViewData["Consultorio"] = new SelectList(new List<Consultorio>(), "IdConsultorio", "Nome");
+                ViewData["Sexo"] = new SelectList(new List<Sexo>(), "IdSexo", "Nome");
+                ViewData["Especialidade"] = new SelectList(new List<Especialidade>(), "IdEspecialidade", "Nome");
+                ViewData["UF"] = new SelectList(new List<UF>(), "IdUF", "Nome");
+            }
+        }        private string GerarTokenJWT(string email, string role)
         {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentException("Email não pode ser nulo ou vazio", nameof(email));
+            }
+
+            if (string.IsNullOrEmpty(role))
+            {
+                throw new ArgumentException("Role não pode ser nulo ou vazio", nameof(role));
+            }
+
             var keyConfig = _configuration["Jwt:Key"];
             if (string.IsNullOrEmpty(keyConfig))
             {
@@ -65,41 +86,54 @@ namespace ConsultasMedicas.Controllers
         {
             await CarregarCombos();
             return View();
-        }
-
-        [HttpPost]
+        }        [HttpPost]
         public async Task<IActionResult> Registrar(Medico medico)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                await CarregarCombos();
+                return View(medico);
+            }
 
             var incluirMedico = await _serviceMedico.RptMedico.IncluirAsync(medico);
 
+            if (incluirMedico == null)
+            {
+                TempData["erro"] = "Erro ao cadastrar médico";
+                await CarregarCombos();
+                return View(medico);
+            }
+
             var token = GerarTokenJWT(medico.Email!, "Medico");
 
-            ViewData["Token"] = token;
-            await CarregarCombos();
+            // Armazenar o token em um cookie
+            Response.Cookies.Append("AuthToken", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Expires = DateTime.UtcNow.AddHours(2)
+            });
 
-            return View("Index", incluirMedico);
-        }
-
-        [HttpPost]
+            return RedirectToAction("Index");
+        }        [HttpPost]
         public async Task<IActionResult> Login(MedicoLoginViewModel login)
         {
+            if (!ModelState.IsValid)
+            {
+                TempData["erro"] = "Por favor, preencha todos os campos";
+                return View(login);
+            }
+
             var medico = await _context.Medicos
                 .FirstOrDefaultAsync(m => m.Nome == login.Nome && m.Senha == login.Senha);
 
-            if (medico == null)
+            if (medico == null || string.IsNullOrEmpty(medico.Email))
             {
-                
                 TempData["erro"] = "Login ou senha inválidos";
-                return RedirectToAction("Login", "Medico"); 
-                
+                return View(login);
             }
 
-                
-
-            var token = GerarTokenJWT(medico.Email!, "Medico");
+            var token = GerarTokenJWT(medico.Email, "Medico");
 
             // Armazenar o token em um cookie
             Response.Cookies.Append("AuthToken", token, new CookieOptions
@@ -314,6 +348,48 @@ namespace ConsultasMedicas.Controllers
             }
 
             return View(consultas);
+        }
+
+        // GET: Medico/GetConsultorios
+        [HttpGet("GetConsultorios")]
+        public async Task<IActionResult> GetConsultorios()
+        {            try
+            {
+                var consultorios = await _serviceMedico.RptConsultorio.ListarTodosAsync();
+                return Ok(consultorios);
+            }
+            catch
+            {
+                return StatusCode(500, "Erro ao carregar consultórios");
+            }
+        }
+
+        // GET: Medico/GetEspecialidades
+        [HttpGet("GetEspecialidades")]
+        public async Task<IActionResult> GetEspecialidades()
+        {            try
+            {
+                var especialidades = await _serviceMedico.RptEspecialidade.ListarTodosAsync();
+                return Ok(especialidades);
+            }
+            catch
+            {
+                return StatusCode(500, "Erro ao carregar especialidades");
+            }
+        }
+
+        // GET: Medico/GetSexos
+        [HttpGet("GetSexos")]
+        public async Task<IActionResult> GetSexos()
+        {            try
+            {
+                var sexos = await _serviceMedico.RptSexo.ListarTodosAsync();
+                return Ok(sexos);
+            }
+            catch
+            {
+                return StatusCode(500, "Erro ao carregar sexos");
+            }
         }
     }
 }

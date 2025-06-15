@@ -24,14 +24,63 @@ namespace ConsultasMedicas.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Consulta>>> GetConsultas()
         {
-            return await _context.Consultas.ToListAsync();
+            try
+            {
+                var consultas = await _context.Consultas
+                    .Include(c => c.Medico)
+                        .ThenInclude(m => m.Especialidade)
+                    .Include(c => c.Cliente)
+                    .ToListAsync();
+
+                // Log para debugar os dados retornados
+                foreach (var consulta in consultas)
+                {
+                    Console.WriteLine($"Consulta ID: {consulta.IdConsulta}");
+                    Console.WriteLine($"Médico ID: {consulta.IdMedico}");
+                    Console.WriteLine($"Médico objeto: {(consulta.Medico != null ? "presente" : "nulo")}");
+                    if (consulta.Medico != null)
+                    {
+                        Console.WriteLine($"Nome do Médico: {consulta.Medico.Nome}");
+                        Console.WriteLine($"Especialidade objeto: {(consulta.Medico.Especialidade != null ? "presente" : "nulo")}");
+                        if (consulta.Medico.Especialidade != null)
+                        {
+                            Console.WriteLine($"Nome da Especialidade: {consulta.Medico.Especialidade.Nome}");
+                        }
+                    }
+                    Console.WriteLine("-------------------");
+                }
+
+                // Serializando para visualizar exatamente o que está sendo retornado
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNameCaseInsensitive = true,
+                    PropertyNamingPolicy = null
+                };
+                
+                var serializedConsultas = System.Text.Json.JsonSerializer.Serialize(consultas, options);
+                Console.WriteLine("Dados serializados que serão retornados:");
+                Console.WriteLine(serializedConsultas);
+
+                return consultas;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao buscar consultas: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
         }
 
         // GET: api/ConsultasAPI/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Consulta>> GetConsulta(int id)
         {
-            var consulta = await _context.Consultas.FindAsync(id);
+            var consulta = await _context.Consultas
+                .Include(c => c.Medico)
+                    .ThenInclude(m => m.Especialidade)
+                .Include(c => c.Cliente)
+                .FirstOrDefaultAsync(c => c.IdConsulta == id);
 
             if (consulta == null)
             {
@@ -39,48 +88,135 @@ namespace ConsultasMedicas.Controllers
             }
 
             return consulta;
-        }
-
-        // PUT: api/ConsultasAPI/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        }        // PUT: api/ConsultasAPI/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutConsulta(int id, Consulta consulta)
         {
-            if (id != consulta.IdConsulta)
+            try 
             {
-                return BadRequest();
-            }
+                if (id != consulta.IdConsulta)
+                {
+                    return BadRequest("ID da consulta não corresponde");
+                }
 
-            _context.Entry(consulta).State = EntityState.Modified;
+                var consultaExistente = await _context.Consultas
+                    .Include(c => c.Medico)
+                        .ThenInclude(m => m.Especialidade)
+                    .Include(c => c.Cliente)
+                    .FirstOrDefaultAsync(c => c.IdConsulta == id);
 
-            try
-            {
+                if (consultaExistente == null)
+                {
+                    return NotFound("Consulta não encontrada");
+                }
+
+                // Verifica se já existe outra consulta no mesmo horário para o médico selecionado
+                var consultaConflito = await _context.Consultas
+                    .FirstOrDefaultAsync(c => c.IdMedico == consulta.IdMedico && 
+                                            c.Data.Date == consulta.Data.Date && 
+                                            c.Horario == consulta.Horario &&
+                                            c.IdConsulta != id);
+
+                if (consultaConflito != null)
+                {
+                    return BadRequest("Já existe uma consulta agendada para este horário");
+                }
+
+                // Verifica se o médico existe
+                var medico = await _context.Medicos
+                    .Include(m => m.Especialidade)
+                    .FirstOrDefaultAsync(m => m.IdMedico == consulta.IdMedico);
+                    
+                if (medico == null)
+                {
+                    return BadRequest("Médico não encontrado");
+                }
+
+                // Atualiza os campos permitidos
+                consultaExistente.Data = consulta.Data;
+                consultaExistente.Horario = consulta.Horario;
+                consultaExistente.IdMedico = consulta.IdMedico;
+                consultaExistente.Medico = medico;
+
                 await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ConsultaExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
 
-            return NoContent();
+                // Recarrega a consulta com todos os relacionamentos antes de retornar
+                await _context.Entry(consultaExistente)
+                    .Reference(c => c.Medico)
+                    .LoadAsync();
+
+                if (consultaExistente.Medico != null)
+                {
+                    await _context.Entry(consultaExistente.Medico)
+                        .Reference(m => m.Especialidade)
+                        .LoadAsync();
+                }
+
+                return Ok(consultaExistente);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao atualizar consulta: {ex.Message}");
+            }
         }
 
         // POST: api/ConsultasAPI
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Consulta>> PostConsulta(Consulta consulta)
         {
-            _context.Consultas.Add(consulta);
-            await _context.SaveChangesAsync();
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
 
-            return CreatedAtAction("GetConsulta", new { id = consulta.IdConsulta }, consulta);
+                var medico = await _context.Medicos
+                    .Include(m => m.Especialidade)
+                    .FirstOrDefaultAsync(m => m.IdMedico == consulta.IdMedico);
+                    
+                if (medico == null)
+                {
+                    return BadRequest("Médico não encontrado");
+                }
+
+                var cliente = await _context.Clientes.FindAsync(consulta.IdCliente);
+                if (cliente == null)
+                {
+                    return BadRequest("Cliente não encontrado");
+                }
+
+                var consultaExistente = await _context.Consultas
+                    .FirstOrDefaultAsync(c => c.IdMedico == consulta.IdMedico && 
+                                            c.Data.Date == consulta.Data.Date && 
+                                            c.Horario == consulta.Horario);
+
+                if (consultaExistente != null)
+                {
+                    return BadRequest("Já existe uma consulta agendada para este horário");
+                }
+
+                _context.Consultas.Add(consulta);
+                await _context.SaveChangesAsync();
+
+                // Carregar os relacionamentos antes de retornar
+                await _context.Entry(consulta)
+                    .Reference(c => c.Medico)
+                    .LoadAsync();
+
+                if (consulta.Medico != null)
+                {
+                    await _context.Entry(consulta.Medico)
+                        .Reference(m => m.Especialidade)
+                        .LoadAsync();
+                }
+
+                return CreatedAtAction(nameof(GetConsulta), new { id = consulta.IdConsulta }, consulta);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao agendar consulta: {ex.Message}");
+            }
         }
 
         // DELETE: api/ConsultasAPI/5

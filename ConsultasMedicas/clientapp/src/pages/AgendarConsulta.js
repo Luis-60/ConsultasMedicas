@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Typography, Paper, Grid, TextField, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -8,7 +8,8 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import localizedFormat from 'dayjs/plugin/localizedFormat';
-import { consultasService, medicosService } from '../services/api';
+import { consultasService } from '../services/api';
+import { medicoPublicService } from '../services/api';
 
 // Configurar plugins do dayjs
 dayjs.extend(customParseFormat);
@@ -17,6 +18,10 @@ dayjs.locale('pt-br');
 
 const AgendarConsulta = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isEditing = location.state?.editing || false;
+  const consultaParaEditar = location.state?.consulta;
+
   const [data, setData] = useState(null);
   const [medico, setMedico] = useState('');
   const [horario, setHorario] = useState('');
@@ -31,13 +36,30 @@ const AgendarConsulta = () => {
   ];
 
   useEffect(() => {
+    if (isEditing && consultaParaEditar) {
+      // Converter a data da string para objeto dayjs
+      const dataConsulta = dayjs(consultaParaEditar.data);
+      setData(dataConsulta);
+      setMedico(consultaParaEditar.idMedico.toString());
+      // Remove os segundos do horário
+      setHorario(consultaParaEditar.horario.substring(0, 5));
+    }
+  }, [isEditing, consultaParaEditar]);
+
+  useEffect(() => {
     const carregarMedicos = async () => {
       try {
-        const response = await medicosService.listar();
-        setMedicos(response.data);
-        setLoading(false);
+        const response = await medicoPublicService.listar();
+        if (response && response.data) {
+          console.log('Médicos carregados:', response.data);
+          setMedicos(response.data);
+        } else {
+          throw new Error('Dados de médicos não encontrados na resposta');
+        }
       } catch (err) {
-        setError('Erro ao carregar lista de médicos');
+        console.error('Erro ao carregar médicos:', err);
+        setError('Erro ao carregar lista de médicos. Por favor, tente novamente mais tarde.');
+      } finally {
         setLoading(false);
       }
     };
@@ -47,21 +69,69 @@ const AgendarConsulta = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!data || !medico || !horario) {
-      setError('Por favor, preencha todos os campos');
+    setError('');
+
+    // Validação dos campos
+    if (!data) {
+      setError('Por favor, selecione uma data');
+      return;
+    }
+    if (!medico) {
+      setError('Por favor, selecione um médico');
+      return;
+    }
+    if (!horario) {
+      setError('Por favor, selecione um horário');
       return;
     }
 
     try {
-      await consultasService.agendar({
-        dataConsulta: data.format('YYYY-MM-DD'),
-        horario: horario,
-        medicoId: medico,
-      });
+      // Pegar o ID do cliente do localStorage
+      const userData = localStorage.getItem('userData');
+      if (!userData) {
+        setError('Usuário não está autenticado');
+        navigate('/login');
+        return;
+      }
 
-      navigate('/consultas');
+      const user = JSON.parse(userData);
+      const idCliente = user.idCliente;
+
+      if (!idCliente) {
+        setError('ID do cliente não encontrado. Por favor, faça login novamente.');
+        navigate('/login');
+        return;
+      }
+
+      // Formatar a data e horário conforme esperado pelo backend
+      const formattedDate = data.format('YYYY-MM-DD');
+      const consultaData = {
+        idMedico: parseInt(medico),
+        idCliente: parseInt(idCliente),
+        data: formattedDate,
+        horario: horario + ':00' // Adiciona os segundos para match com TimeSpan
+      };
+
+      if (isEditing && consultaParaEditar) {
+        // Se estiver editando, usa o método PUT
+        await consultasService.atualizar(consultaParaEditar.idConsulta, consultaData);
+        navigate('/consultas', { 
+          state: { message: 'Consulta atualizada com sucesso!' }
+        });
+      } else {
+        // Se for nova consulta, usa o método POST
+        await consultasService.agendar(consultaData);
+        navigate('/consultas', { 
+          state: { message: 'Consulta agendada com sucesso!' }
+        });
+      }
     } catch (err) {
-      setError('Erro ao agendar consulta. Por favor, tente novamente.');
+      console.error('Erro ao processar consulta:', err);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError(`Erro ao ${isEditing ? 'atualizar' : 'agendar'} consulta. Por favor, tente novamente.`);
+      }
     }
   };
 
@@ -77,7 +147,7 @@ const AgendarConsulta = () => {
     <Container maxWidth="md">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
-          Agendar Nova Consulta
+          {isEditing ? 'Editar Consulta' : 'Agendar Nova Consulta'}
         </Typography>
 
         {error && (
@@ -99,7 +169,7 @@ const AgendarConsulta = () => {
                 >
                   {medicos.map((med) => (
                     <MenuItem key={med.idMedico} value={med.idMedico}>
-                      Dr(a). {med.nome} - {med.especialidade}
+                      Dr(a). {med.nome} - {med.especialidade?.nome || 'Especialidade não informada'}
                     </MenuItem>
                   ))}
                 </Select>
@@ -111,10 +181,15 @@ const AgendarConsulta = () => {
                 <DatePicker
                   label="Data da Consulta"
                   value={data}
-                  onChange={(newValue) => setData(newValue)}
-                  slotProps={{ textField: { fullWidth: true } }}
-                  disablePast
+                  onChange={setData}
                   format="DD/MM/YYYY"
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true
+                    }
+                  }}
+                  disablePast
                 />
               </LocalizationProvider>
             </Grid>
@@ -128,9 +203,9 @@ const AgendarConsulta = () => {
                   label="Horário"
                   required
                 >
-                  {horarios.map((hora) => (
-                    <MenuItem key={hora} value={hora}>
-                      {hora}
+                  {horarios.map((h) => (
+                    <MenuItem key={h} value={h}>
+                      {h}
                     </MenuItem>
                   ))}
                 </Select>
@@ -145,7 +220,7 @@ const AgendarConsulta = () => {
                 fullWidth
                 size="large"
               >
-                Agendar Consulta
+                {isEditing ? 'Salvar Alterações' : 'Agendar Consulta'}
               </Button>
             </Grid>
           </Grid>
