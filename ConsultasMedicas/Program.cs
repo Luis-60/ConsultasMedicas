@@ -8,15 +8,26 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// Adicionar CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactPolicy",
+        builder => builder
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials());
+});
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-// Registro do serviço ServiceMedico
+// Registro do serviï¿½o ServiceMedico
 builder.Services.AddScoped<ServiceMedico>();
 builder.Services.AddScoped<ServiceCliente>();
-// Configuração de autenticação JWT
+// Configuraï¿½ï¿½o de autenticaï¿½ï¿½o JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -36,7 +47,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSettings["Key"])),
-        ClockSkew = TimeSpan.Zero // Remove o atraso padrão de 5 minutos
+        ClockSkew = TimeSpan.Zero // Remove o atraso padrï¿½o de 5 minutos
     };
 });
 
@@ -47,6 +58,11 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+
+// Usar CORS antes de outras middlewares
+app.UseCors("ReactPolicy");
+
+app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
