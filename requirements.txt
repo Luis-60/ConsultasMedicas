@@ -1,0 +1,25 @@
+# ASP.NET Core Dependencies
+Microsoft.AspNetCore.Authentication.JwtBearer == 9.0.3
+Microsoft.AspNetCore.Identity.EntityFrameworkCore == 9.0.3
+Microsoft.AspNetCore.Identity.UI == 9.0.3
+Microsoft.EntityFrameworkCore.SqlServer == 9.0.3
+Microsoft.EntityFrameworkCore.Tools == 9.0.3
+Microsoft.VisualStudio.Web.CodeGeneration.Design == 9.0.0
+
+# Project Configuration
+- .NET 9.0
+- Entity Framework Core (EF Core)
+- SQL Server Database
+- JWT Authentication
+- ASP.NET Core Identity
+- ASP.NET Core MVC
+- Web API
+
+# Features & Capabilities
+- JWT-based Authentication
+- Identity Management
+- Entity Framework Core ORM
+- SQL Server Database Integration
+- Code-First Migrations
+- RESTful API Support
+- MVC Architecture
