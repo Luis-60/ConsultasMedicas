@@ -27,18 +27,43 @@ export const AuthProvider = ({ children }) => {
         response = await authService.loginMedico(credentials);
       }
 
-      if (!response) {
+      if (!response?.data) {
         throw new Error('Resposta vazia do servidor');
       }
 
-      const userData = response;
-      const token = userData.idCliente || userData.idMedico;
+      console.log('AuthContext: Resposta do login:', response.data);
+
+      const userData = response.data;
+      let token;
       
+      if (type === 'cliente') {
+        token = userData.idCliente || userData.IdCliente;
+      } else {
+        token = userData.idMedico || userData.IdMedico;
+      }
+      
+      if (!token) {
+        console.error('AuthContext: ID não encontrado na resposta:', userData);
+        throw new Error('ID não encontrado na resposta do servidor');
+      }
+
+      // Garante que os IDs estejam em ambos os formatos para compatibilidade
+      const userDataToStore = {
+        ...userData,
+        idMedico: userData.idMedico || userData.IdMedico,
+        IdMedico: userData.idMedico || userData.IdMedico,
+        idCliente: userData.idCliente || userData.IdCliente,
+        IdCliente: userData.idCliente || userData.IdCliente
+      };
+
+      console.log('AuthContext: Login bem-sucedido, token:', token);
+      console.log('AuthContext: Dados do usuário:', userDataToStore);
+
       localStorage.setItem('token', token.toString());
       localStorage.setItem('userType', type);
-      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('userData', JSON.stringify(userDataToStore));
       
-      setUser({ token, type, ...userData });
+      setUser({ token, type, ...userDataToStore });
       return true;
     } catch (error) {
       console.error('AuthContext: Erro no login', error);

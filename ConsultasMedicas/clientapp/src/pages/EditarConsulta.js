@@ -11,9 +11,10 @@ import {
   Select,
   MenuItem,
   Snackbar,
-  Alert
+  Alert,
+  Box
 } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -24,9 +25,14 @@ import { consultasService, medicoPublicService } from '../services/api';
 const EditarConsulta = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [medico, setMedico] = useState('');
-  const [horario, setHorario] = useState('');
+  const location = useLocation();
+  const consultaOriginal = location.state?.consulta;
+
+  const [consulta, setConsulta] = useState({
+    data: null,
+    idMedico: '',
+    horario: '',
+  });
   const [medicos, setMedicos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,136 +51,128 @@ const EditarConsulta = () => {
   useEffect(() => {
     const carregarDados = async () => {
       try {
+        setLoading(true);
+        
         // Carregar lista de médicos
         const responseMedicos = await medicoPublicService.listar();
-        setMedicos(responseMedicos.data);
+        setMedicos(responseMedicos.data || []);
 
-        // Carregar dados da consulta
-        const responseConsulta = await consultasService.detalhar(id);
-        const consulta = responseConsulta.data;
+        // Se temos os dados da consulta do state, usamos eles
+        if (consultaOriginal) {
+          setConsulta({
+            data: dayjs(consultaOriginal.data),
+            idMedico: consultaOriginal.idMedico?.toString() || '',
+            horario: consultaOriginal.horario || '',
+          });
+        }
+        // Se não, carregamos do servidor
+        else if (id) {
+          const responseConsulta = await consultasService.detalhar(id);
+          const dadosConsulta = responseConsulta.data;
+          
+          if (!dadosConsulta) {
+            throw new Error('Consulta não encontrada');
+          }
 
-        setData(dayjs(consulta.data));
-        setMedico(consulta.idMedico.toString());
-        setHorario(consulta.horario.substring(0, 5)); // Formato HH:mm
+          setConsulta({
+            data: dayjs(dadosConsulta.data),
+            idMedico: dadosConsulta.idMedico?.toString() || '',
+            horario: dadosConsulta.horario || '',
+          });
+        }
+
         setLoading(false);
       } catch (err) {
-        setError('Erro ao carregar dados: ' + err.message);
-        setSnackbar({
-          open: true,
-          message: 'Erro ao carregar dados da consulta',
-          severity: 'error'
-        });
+        console.error('Erro ao carregar dados:', err);
+        setError(err.message || 'Erro ao carregar os dados da consulta');
         setLoading(false);
       }
     };
 
     carregarDados();
-  }, [id]);
+  }, [id, consultaOriginal]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    if (!data || !medico || !horario) {
-      setError('Todos os campos são obrigatórios');
-      return;
-    }
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    
     try {
-      const userData = localStorage.getItem('userData');
-      if (!userData) {
-        throw new Error('Usuário não está autenticado');
+      if (!consulta.data || !consulta.idMedico || !consulta.horario) {
+        throw new Error('Por favor, preencha todos os campos');
       }
 
-      const user = JSON.parse(userData);
-      const consulta = {
-        idConsulta: parseInt(id),
-        idMedico: parseInt(medico),
-        idCliente: parseInt(user.idCliente),
-        data: data.format('YYYY-MM-DD'),
-        horario: horario + ':00'
+      const consultaAtualizada = {
+        idConsulta: Number(id),
+        data: dayjs(consulta.data).format('YYYY-MM-DD'),
+        idMedico: Number(consulta.idMedico),
+        horario: consulta.horario,
       };
 
-      await consultasService.atualizar(id, consulta);
+      await consultasService.atualizar(id, consultaAtualizada);
+      
       navigate('/consultas', { 
         state: { message: 'Consulta atualizada com sucesso!' }
       });
     } catch (err) {
       console.error('Erro ao atualizar consulta:', err);
-      setError(err.response?.data?.message || 'Erro ao atualizar consulta');
       setSnackbar({
         open: true,
-        message: 'Erro ao atualizar consulta: ' + (err.response?.data?.message || err.message),
+        message: err.message || 'Erro ao atualizar a consulta',
         severity: 'error'
       });
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
   if (loading) {
     return (
-      <Container maxWidth="md">
-        <Typography>Carregando...</Typography>
+      <Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Typography>Carregando...</Typography>
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error" sx={{ mt: 4 }}>{error}</Alert>
       </Container>
     );
   }
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={3} sx={{ p: 3, mt: 3 }}>
-        <Typography variant="h5" component="h1" gutterBottom align="center">
+      <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
+        <Typography variant="h5" component="h1" gutterBottom>
           Editar Consulta
         </Typography>
 
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
                 <DatePicker
                   label="Data da Consulta"
-                  value={data}
-                  onChange={(newValue) => setData(newValue)}
-                  format="DD/MM/YYYY"
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                    }
-                  }}
+                  value={consulta.data}
+                  onChange={(newValue) => setConsulta(prev => ({ ...prev, data: newValue }))}
+                  renderInput={(params) => <TextField {...params} required fullWidth />}
                   disablePast
+                  format="DD/MM/YYYY"
                 />
               </LocalizationProvider>
             </Grid>
 
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth required>
-                <InputLabel>Horário</InputLabel>
-                <Select
-                  value={horario}
-                  onChange={(e) => setHorario(e.target.value)}
-                  label="Horário"
-                >
-                  {horarios.map((h) => (
-                    <MenuItem key={h} value={h}>{h}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12}>
               <FormControl fullWidth required>
                 <InputLabel>Médico</InputLabel>
                 <Select
-                  value={medico}
-                  onChange={(e) => setMedico(e.target.value)}
+                  value={consulta.idMedico}
+                  onChange={(e) => setConsulta(prev => ({ ...prev, idMedico: e.target.value }))}
                   label="Médico"
                 >
-                  {medicos.map((med) => (
-                    <MenuItem key={med.idMedico} value={med.idMedico.toString()}>
-                      {med.nome}
+                  {medicos.map((medico) => (
+                    <MenuItem key={medico.idMedico || medico.IdMedico} value={medico.idMedico || medico.IdMedico}>
+                      {medico.nome || medico.Nome} - {medico.especialidade?.nome || medico.Especialidade?.Nome || 'Sem especialidade'}
                     </MenuItem>
                   ))}
                 </Select>
@@ -182,33 +180,42 @@ const EditarConsulta = () => {
             </Grid>
 
             <Grid item xs={12}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                fullWidth
-                size="large"
-              >
-                Atualizar Consulta
-              </Button>
+              <FormControl fullWidth required>
+                <InputLabel>Horário</InputLabel>
+                <Select
+                  value={consulta.horario}
+                  onChange={(e) => setConsulta(prev => ({ ...prev, horario: e.target.value }))}
+                  label="Horário"
+                >
+                  {horarios.map((horario) => (
+                    <MenuItem key={horario} value={horario}>
+                      {horario}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                <Button onClick={() => navigate('/consultas')} variant="outlined">
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="contained" color="primary">
+                  Salvar Alterações
+                </Button>
+              </Box>
             </Grid>
           </Grid>
         </form>
-
-        {error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {error}
-          </Typography>
-        )}
       </Paper>
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}>
           {snackbar.message}
         </Alert>
       </Snackbar>

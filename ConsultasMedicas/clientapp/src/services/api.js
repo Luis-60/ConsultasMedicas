@@ -1,5 +1,6 @@
 import axios from 'axios';
 import dayjs from 'dayjs';
+import { default as medicoAdminService } from './medicoAdminService';
 
 // Criando uma instância do axios com configurações base
 const api = axios.create({
@@ -24,7 +25,8 @@ api.interceptors.request.use(
 );
 
 // Serviços para autenticação
-export const authService = {  loginCliente: async (credentials) => {
+const authService = {
+  loginCliente: async (credentials) => {
     try {
       const params = new URLSearchParams({
         email: credentials.Email,
@@ -37,7 +39,7 @@ export const authService = {  loginCliente: async (credentials) => {
         throw new Error('Dados de usuário não encontrados na resposta');
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Erro no login do cliente:', error);
       throw error;
@@ -57,7 +59,7 @@ export const authService = {  loginCliente: async (credentials) => {
         throw new Error('Dados do médico não encontrados na resposta');
       }
 
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Erro no login do médico:', error);
       throw error;
@@ -72,7 +74,7 @@ export const authService = {  loginCliente: async (credentials) => {
 };
 
 // Serviços para consultas
-export const consultasService = {
+const consultasService = {
   listar: async () => {
     return await api.get('/ConsultasAPI');
   },
@@ -86,7 +88,6 @@ export const consultasService = {
   },
 
   atualizar: async (id, consulta) => {
-    // Garante que o ID da consulta está incluído no objeto
     const consultaAtualizada = {
       ...consulta,
       idConsulta: id
@@ -99,12 +100,61 @@ export const consultasService = {
   }
 };
 
-// Exportando os serviços de médicos
-export { default as medicoPublicService } from './medicoPublicService';
-export { default as medicoAdminService } from './medicoAdminService';
+// Serviços públicos para médicos (não requer autenticação)
+const medicoPublicService = {
+  listar: async () => {
+    try {
+      console.log('Carregando lista de médicos...');
+      const response = await api.get('/MedicosAPI');
+      
+      if (!response.data) {
+        throw new Error('Nenhum médico encontrado');
+      }
+
+      // Normaliza os dados dos médicos
+      const medicosNormalizados = response.data.map(medico => {
+        const especialidade = medico.especialidade || medico.Especialidade || {};
+        const especialidadeNormalizada = {
+          id: especialidade.idEspecialidade || especialidade.IdEspecialidade,
+          nome: especialidade.nome || especialidade.Nome || 'Não especificada'
+        };
+
+        return {
+          idMedico: medico.idMedico || medico.IdMedico,
+          nome: medico.nome || medico.Nome || '',
+          email: medico.email || medico.Email || '',
+          telefone: medico.telefone || medico.Telefone || '',
+          crm: medico.crm || medico.CRM || '',
+          especialidade: especialidadeNormalizada
+        };
+      });
+
+      console.log('Médicos carregados:', medicosNormalizados);
+      return { ...response, data: medicosNormalizados };
+    } catch (error) {
+      console.error('Erro ao carregar médicos:', error);
+      throw error;
+    }
+  },
+
+  obterPorId: async (id) => {
+    try {
+      const response = await api.get(`/MedicosAPI/${id}`);
+      
+      if (!response.data) {
+        throw new Error('Médico não encontrado');
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Erro ao carregar médico:', error);
+      throw error;
+    }
+  }
+};
 
 // Serviços para clientes
-export const clientesService = {
+const clientesService = {
   cadastrar: async (cliente) => {
     try {
       console.log('Dados do cliente sendo enviados:', cliente);
@@ -144,30 +194,80 @@ export const clientesService = {
       throw error;
     }
   },
+  
+  deletarPerfil: async (id) => {
+    try {
+      console.log('Iniciando processo de deleção do cliente:', id);
+      const response = await api.delete(`/ClientesAPI/${id}`);
+      console.log('Resposta da deleção:', response);
+      return response.data;
+    } catch (error) {
+      console.error('Erro detalhado ao deletar cliente:', {
+        id: id,
+        error: error,
+        response: error.response?.data,
+        status: error.response?.status
+      });
 
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || 'Não é possível excluir o perfil no momento.');
+      }
+      
+      if (error.response?.status === 404) {
+        throw new Error('Cliente não encontrado.');
+      }
+      
+      throw new Error('Erro ao excluir o perfil.');
+    }
+  },
+  
   atualizarPerfil: async (id, dados) => {
     try {
-      console.log('Atualizando perfil:', id);
-      console.log('Dados enviados:', dados);
+      console.log('Atualizando perfil do cliente:', id);
+      console.log('Dados recebidos:', dados);
 
-      // Prepara os dados conforme esperado pelo backend
+      if (!dados.Nome && !dados.nome) throw new Error('Nome é obrigatório');
+      if (!dados.Telefone && !dados.telefone) throw new Error('Telefone é obrigatório');
+
       const dadosAtualizacao = {
-        IdCliente: id,
-        Nome: dados.Nome,
-        Telefone: dados.Telefone.replace(/\D/g, ''), // Remove formatação do telefone
-        Senha: dados.Senha || undefined // Só envia se foi fornecida
+        IdCliente: parseInt(id),
+        Nome: (dados.nome || dados.Nome || '').trim(),
+        Telefone: (dados.telefone || dados.Telefone || '').replace(/\D/g, ''),
+        Senha: dados.senha || dados.Senha || undefined
       };
 
-      console.log('Dados formatados para envio:', dadosAtualizacao);
-      
+      if (!dadosAtualizacao.Nome) throw new Error('Nome é obrigatório');
+      if (!dadosAtualizacao.Telefone) throw new Error('Telefone é obrigatório');
+
+      console.log('Dados normalizados para envio:', dadosAtualizacao);
       const response = await api.put(`/ClientesAPI/${id}`, dadosAtualizacao);
       console.log('Resposta da atualização:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error.response?.data || error.message);
-      throw error;
+      console.error('Erro ao atualizar perfil:', error.response?.data);
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors)
+          .flat()
+          .join(', ');
+        throw new Error(errorMessages);
+      } else if (error.response?.data?.title) {
+        throw new Error(error.response.data.title);
+      } else {
+        throw new Error(error.message || 'Erro ao atualizar perfil');
+      }
     }
   }
 };
 
-export default api;
+// Exportando os serviços
+export {
+  api as default,
+  authService,
+  clientesService,
+  consultasService,
+  medicoPublicService,
+  medicoAdminService
+};

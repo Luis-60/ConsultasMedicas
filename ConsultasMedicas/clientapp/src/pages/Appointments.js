@@ -55,9 +55,13 @@ const Appointments = () => {
     try {
       setLoading(true);
       const userData = JSON.parse(localStorage.getItem('userData'));
-      if (!userData?.idCliente) {
+      const clienteId = userData?.idCliente || userData?.IdCliente;
+      
+      if (!clienteId) {
         throw new Error('Usuário não está autenticado');
-      }      const response = await consultasService.listar();
+      }
+      
+      const response = await consultasService.listar();
       console.log('Dados recebidos da API:', response.data);
       
       // Verifica a estrutura detalhada de uma consulta
@@ -73,7 +77,7 @@ const Appointments = () => {
       
       // Filtra apenas as consultas do cliente logado
       const minhasConsultas = response.data.filter(
-        consulta => consulta.idCliente === userData.idCliente
+        consulta => consulta.idCliente === clienteId || consulta.IdCliente === clienteId
       );
       
       console.log('Consultas filtradas:', minhasConsultas);
@@ -86,15 +90,10 @@ const Appointments = () => {
       });
 
       setConsultas(consultasOrdenadas);
+      setLoading(false);
     } catch (err) {
       console.error('Erro completo:', err);
-      setError('Erro ao carregar consultas: ' + err.message);
-      setSnackbar({
-        open: true,
-        message: 'Erro ao carregar consultas',
-        severity: 'error'
-      });
-    } finally {
+      setError(err.message);
       setLoading(false);
     }
   };
@@ -185,7 +184,8 @@ const Appointments = () => {
                   consultas.map((consulta) => (
                     <TableRow key={consulta.idConsulta}>
                       <TableCell>{formatarData(consulta.data)}</TableCell>
-                      <TableCell>{formatarHorario(consulta.horario)}</TableCell>                      <TableCell>{(consulta.medico?.Nome || consulta.medico?.nome || 'Não informado')}</TableCell>
+                      <TableCell>{formatarHorario(consulta.horario)}</TableCell>
+                      <TableCell>{(consulta.medico?.Nome || consulta.medico?.nome || 'Não informado')}</TableCell>
                       <TableCell>{(consulta.medico?.Especialidade?.Nome || consulta.medico?.especialidade?.nome || (consulta.medico ? 'Especialidade não informada' : 'Médico não informado'))}</TableCell>
                       <TableCell>
                         <Button size="small" onClick={() => handleEditarClick(consulta)} sx={{ mr: 1 }}>

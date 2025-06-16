@@ -16,13 +16,14 @@ import {
   DialogContentText,
   DialogActions,
   Snackbar,
-  Alert
+  Alert,
+  Box
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { consultasService } from '../services/api';
 import dayjs from 'dayjs';
 
-const MedicoConsultas = () => {
+const ClienteConsultas = () => {
   const navigate = useNavigate();
   const [consultas, setConsultas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +36,8 @@ const MedicoConsultas = () => {
     severity: 'success'
   });
 
-  const userData = JSON.parse(localStorage.getItem('userData'));
-  const medicoId = userData?.idMedico || userData?.IdMedico;
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const clienteId = userData?.idCliente || userData?.IdCliente;
 
   useEffect(() => {
     if (!userData) {
@@ -49,8 +50,8 @@ const MedicoConsultas = () => {
 
   const carregarConsultas = async () => {
     try {
-      if (!medicoId) {
-        setError('ID do médico não encontrado. Por favor, faça login novamente.');
+      if (!clienteId) {
+        setError('ID do cliente não encontrado. Por favor, faça login novamente.');
         setLoading(false);
         return;
       }
@@ -58,23 +59,23 @@ const MedicoConsultas = () => {
       const response = await consultasService.listar();
       console.log('Consultas recebidas:', response.data);
       
-      // Filtra apenas as consultas do médico logado
-      const consultasDoMedico = response.data.filter(consulta => 
-        consulta.idMedico === medicoId || consulta.IdMedico === medicoId
+      // Filtra apenas as consultas do cliente logado
+      const consultasDoCliente = response.data.filter(consulta => 
+        consulta.idCliente === clienteId || consulta.IdCliente === clienteId
       ).map(consulta => ({
         ...consulta,
-        // Normaliza os dados do cliente
-        cliente: consulta.cliente || consulta.Cliente,
+        // Normaliza os dados do médico
+        medico: consulta.medico || consulta.Medico,
         // Normaliza os IDs e dados importantes
         idConsulta: consulta.idConsulta || consulta.IdConsulta,
         data: consulta.data || consulta.Data,
         horario: consulta.horario || consulta.Horario
       }));
       
-      console.log('Consultas do médico após normalização:', consultasDoMedico);
+      console.log('Consultas do cliente após normalização:', consultasDoCliente);
       
       // Ordena por data e hora
-      const consultasOrdenadas = consultasDoMedico.sort((a, b) => {
+      const consultasOrdenadas = consultasDoCliente.sort((a, b) => {
         const dataA = new Date(a.data + 'T' + (a.horario || '00:00'));
         const dataB = new Date(b.data + 'T' + (b.horario || '00:00'));
         return dataA - dataB;
@@ -137,23 +138,42 @@ const MedicoConsultas = () => {
       return;
     }
     console.log('Editando consulta:', { consulta, idConsulta });
-    navigate(`/medico/editar-consulta/${idConsulta}`);
+    navigate(`/editar-consulta/${idConsulta}`, { state: { consulta } });
   };
 
   if (loading) {
-    return <Typography>Carregando consultas...</Typography>;
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Typography>Carregando consultas...</Typography>
+        </Box>
+      </Container>
+    );
   }
 
   if (error) {
-    return <Typography color="error">{error}</Typography>;
+    return (
+      <Container maxWidth="lg">
+        <Alert severity="error" sx={{ mt: 4 }}>{error}</Alert>
+      </Container>
+    );
   }
 
   return (
     <Container maxWidth="lg">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Minhas Consultas
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h5" component="h1">
+            Minhas Consultas
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/agendar-consulta')}
+          >
+            Agendar Nova Consulta
+          </Button>
+        </Box>
 
         <TableContainer>
           <Table>
@@ -161,8 +181,8 @@ const MedicoConsultas = () => {
               <TableRow>
                 <TableCell>Data</TableCell>
                 <TableCell>Horário</TableCell>
-                <TableCell>Paciente</TableCell>
-                <TableCell>Telefone</TableCell>
+                <TableCell>Médico</TableCell>
+                <TableCell>Especialidade</TableCell>
                 <TableCell>Ações</TableCell>
               </TableRow>
             </TableHead>
@@ -175,19 +195,20 @@ const MedicoConsultas = () => {
                 </TableRow>
               ) : (
                 consultas.map((consulta) => {
-                  const cliente = consulta.cliente || {};
-                  const nomeCliente = cliente.nome || cliente.Nome;
-                  const telefoneCliente = cliente.telefone || cliente.Telefone;
+                  const medico = consulta.medico || {};
+                  const nomeMedico = medico.nome || medico.Nome;
+                  const especialidade = medico.especialidade || medico.Especialidade || {};
+                  const nomeEspecialidade = especialidade.nome || especialidade.Nome;
                   
                   return (
                     <TableRow key={consulta.idConsulta}>
                       <TableCell>{formatarData(consulta.data)}</TableCell>
                       <TableCell>{formatarHorario(consulta.horario)}</TableCell>
                       <TableCell>
-                        {nomeCliente || 'Não informado'}
+                        {nomeMedico || 'Não informado'}
                       </TableCell>
                       <TableCell>
-                        {telefoneCliente || 'Não informado'}
+                        {nomeEspecialidade || 'Não informada'}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -225,15 +246,15 @@ const MedicoConsultas = () => {
               <Typography variant="body2" sx={{ mt: 1 }}>
                 Data: {formatarData(consultaParaExcluir.data)} às {formatarHorario(consultaParaExcluir.horario)}
                 <br />
-                Paciente: {consultaParaExcluir.cliente?.nome ?? 'Não informado'}
+                Médico: {consultaParaExcluir.medico?.nome ?? 'Não informado'}
               </Typography>
             )}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+          <Button onClick={() => setOpenDialog(false)}>Não</Button>
           <Button onClick={handleConfirmarExclusao} color="error" autoFocus>
-            Confirmar
+            Sim, Cancelar
           </Button>
         </DialogActions>
       </Dialog>
@@ -255,4 +276,4 @@ const MedicoConsultas = () => {
   );
 };
 
-export default MedicoConsultas;
+export default ClienteConsultas;

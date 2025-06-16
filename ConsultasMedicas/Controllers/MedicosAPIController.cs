@@ -219,6 +219,8 @@ namespace ConsultasMedicas.Controllers
         [HttpGet("login")]
         public async Task<ActionResult<Medico>> Login([FromQuery] string email, [FromQuery] string senha)
         {
+            Console.WriteLine($"Tentativa de login para email: {email}");
+            
             var medico = await _context.Medicos
                 .Include(m => m.Consultorio)
                 .Include(m => m.Especialidade)
@@ -227,13 +229,31 @@ namespace ConsultasMedicas.Controllers
 
             if (medico == null)
             {
+                Console.WriteLine($"Login falhou: médico não encontrado para o email {email}");
                 return NotFound("Email ou senha inválidos");
             }
+
+            Console.WriteLine($"Login bem-sucedido para médico ID: {medico.IdMedico}");
 
             // Não retornar a senha
             medico.Senha = null;
 
-            return medico;
+            // Garantir que o ID está presente na resposta
+            var response = new
+            {
+                IdMedico = medico.IdMedico,
+                Nome = medico.Nome,
+                Email = medico.Email,
+                Telefone = medico.Telefone,
+                CRM = medico.CRM,
+                CPF = medico.CPF,
+                Consultorio = medico.Consultorio,
+                Especialidade = medico.Especialidade,
+                Sexo = medico.Sexo
+            };
+
+            Console.WriteLine($"Enviando resposta com ID: {response.IdMedico}");
+            return Ok(response);
         }
 
         private bool MedicoExists(int id)

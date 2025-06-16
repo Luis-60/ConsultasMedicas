@@ -22,8 +22,7 @@ import ptBR from 'date-fns/locale/pt-BR';
 import dayjs from 'dayjs';
 
 const RegisterCliente = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();  const [formData, setFormData] = useState({
     Nome: '',
     Email: '',
     Telefone: '',
@@ -31,31 +30,40 @@ const RegisterCliente = () => {
     DataNascimento: null,
     Senha: '',
     ConfirmarSenha: '',
-    IdSexo: '1'
+    IdSexo: ''  // Começamos com string vazia e atualizamos depois de carregar os dados
   });
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [sexos, setSexos] = useState([]);
-  useEffect(() => {
-    const fetchDados = async () => {
+  useEffect(() => {    const fetchDados = async () => {
       try {
         const sexosData = await clientesService.listarSexos();
         console.log('Sexos carregados:', sexosData);
         
         if (Array.isArray(sexosData) && sexosData.length > 0) {
           setSexos(sexosData);
-          // Set initial IdSexo to the first available option
+          
+          // Normaliza os dados do sexo
+          const primeiroSexo = sexosData[0].idSexo || sexosData[0].IdSexo || '';
+          console.log('Definindo sexo inicial:', primeiroSexo);
+          
           setFormData(prev => ({
             ...prev,
-            IdSexo: sexosData[0].idSexo
+            IdSexo: String(primeiroSexo) // Converte para string para garantir consistência
           }));
         } else {
-          throw new Error('Nenhuma opção de sexo disponível');
+          console.warn('Nenhuma opção de sexo disponível');
+          setSexos([]);
+          setFormData(prev => ({
+            ...prev,
+            IdSexo: ''
+          }));
         }
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
         setError('Erro ao carregar dados do formulário: ' + (err.message || 'Erro desconhecido'));
+        setSexos([]);
       }
     };
 
@@ -107,12 +115,18 @@ const RegisterCliente = () => {
     else if (name === 'Email') {
       // Limit email to 255 characters
       formattedValue = value.slice(0, 255);
+    }    // Se for o campo IdSexo, garante que o valor seja uma string
+    if (name === 'IdSexo') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: String(value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
     }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: formattedValue
-    }));
   };
 
   const handleDateChange = (date) => {
@@ -311,13 +325,12 @@ const RegisterCliente = () => {
 
             <Grid item xs={12}>
               <FormControl fullWidth required>
-                <InputLabel>Sexo</InputLabel>
-                <Select
+                <InputLabel>Sexo</InputLabel>                <Select
                   name="IdSexo"
-                  value={formData.IdSexo}
+                  value={formData.IdSexo || ''}
                   onChange={handleChange}
                   label="Sexo"
-                  disabled={loading}
+                  disabled={loading || sexos.length === 0}
                 >
                   {sexos.map((sexo) => (
                     <MenuItem key={sexo.idSexo} value={sexo.idSexo}>

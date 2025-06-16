@@ -12,8 +12,8 @@ import MedicoEditarConsulta from './pages/MedicoEditarConsulta';
 import MedicoPerfil from './pages/MedicoPerfil';
 import RegisterMedico from './pages/RegisterMedico';
 import RegisterCliente from './pages/RegisterCliente';
+import ClienteConsultas from './pages/ClienteConsultas';
 import Profile from './pages/Profile';
-import Appointments from './pages/Appointments';
 import AgendarConsulta from './pages/AgendarConsulta';
 import EditarConsulta from './pages/EditarConsulta';
 import './App.css';
@@ -35,7 +35,7 @@ const AppContent = () => {
           <Route path="/cadastro" element={<RegisterCliente />} />
           <Route path="/cadastro-medico" element={<RegisterMedico />} />
           <Route path="/perfil" element={<Profile />} />
-          <Route path="/consultas" element={<Appointments />} />
+          <Route path="/consultas" element={<ClienteConsultas />} />
           <Route path="/agendar-consulta" element={<AgendarConsulta />} />
           <Route path="/editar-consulta/:id" element={<EditarConsulta />} />
         </Routes>

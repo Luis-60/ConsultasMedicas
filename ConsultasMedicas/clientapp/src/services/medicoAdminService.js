@@ -35,9 +35,23 @@ export const medicoAdminService = {
           ? new Error(error.response.data)
           : error.response.data;
       }
+      throw error;    }
+  },
+
+  deletar: async (id) => {
+    try {
+      console.log('Deletando médico:', id);
+      const response = await api.delete(`/MedicosAPI/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao deletar médico:', error);
+      if (error.response?.data) {
+        throw new Error(error.response?.data?.message || 'Erro ao deletar médico. Você pode ter consultas agendadas.');
+      }
       throw error;
     }
-  },  
+  },
+  
   atualizar: async (id, medico) => {
     try {
       if (!id) throw new Error('ID do médico é obrigatório');

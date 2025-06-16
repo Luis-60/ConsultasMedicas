@@ -12,7 +12,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { medicoAdminService } from '../services/api';
+import { medicoAdminService } from '../services/medicoAdminService';
 
 const MedicoPerfil = () => {
   const navigate = useNavigate();
@@ -37,30 +37,44 @@ const MedicoPerfil = () => {
   });
 
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const medicoId = userData?.idMedico;
+  const medicoId = userData?.idMedico || userData?.IdMedico;
 
   useEffect(() => {
-    if (medicoId) {
-      carregarPerfil();
-    } else {
-      navigate('/login-medico');
+    if (!userData) {
+      setError('Dados do usuário não encontrados');
+      setLoading(false);
+      return;
     }
-  }, [medicoId, navigate]);
+
+    if (!medicoId) {
+      console.error('ID do médico não encontrado nos dados:', userData);
+      setError('ID do médico não encontrado. Por favor, faça login novamente.');
+      setLoading(false);
+      return;
+    }
+
+    carregarPerfil();
+  }, [medicoId]);
 
   const carregarPerfil = async () => {
     try {
       const response = await medicoAdminService.obterPorId(medicoId);
-      if (response?.data) {
-        setPerfil(prev => ({
-          ...prev,
-          ...response.data,
-          Senha: '' // Não mostrar a senha atual
-        }));
-      }
+      console.log('Dados do perfil:', response.data);
+      setPerfil({
+        Nome: response.data.nome || response.data.Nome || '',
+        Email: response.data.email || response.data.Email || '',
+        Telefone: response.data.telefone || response.data.Telefone || '',
+        CRM: response.data.crm || response.data.CRM || '',
+        CPF: response.data.cpf || response.data.CPF || '',
+        Senha: '',
+        IdEspecialidade: response.data.idEspecialidade || response.data.IdEspecialidade || '',
+        IdConsultorio: response.data.idConsultorio || response.data.IdConsultorio || '',
+        IdSexo: response.data.idSexo || response.data.IdSexo || ''
+      });
       setLoading(false);
     } catch (err) {
       console.error('Erro ao carregar perfil:', err);
-      setError('Erro ao carregar dados do perfil');
+      setError(err.message || 'Erro ao carregar o perfil');
       setLoading(false);
     }
   };
@@ -234,25 +248,49 @@ const MedicoPerfil = () => {
                 helperText="Deixe em branco para manter a senha atual"
               />
             </Grid>
-          </Grid>
+          </Grid>          <Box sx={{ mt: 3, display: 'flex', gap: 2, flexDirection: 'column' }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={saving}
+                sx={{ flex: 1 }}
+              >
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
 
-          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/medico/consultas')}
+                disabled={saving}
+                sx={{ flex: 1 }}
+              >
+                Minhas Consultas
+              </Button>
+            </Box>
+
             <Button
-              type="submit"
               variant="contained"
+              color="error"
               disabled={saving}
-              sx={{ flex: 1 }}
+              onClick={async () => {
+                if (window.confirm('Tem certeza que deseja deletar seu perfil? Esta ação não pode ser desfeita.')) {
+                  try {
+                    setSaving(true);
+                    await medicoAdminService.deletar(medicoId);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userType');
+                    localStorage.removeItem('userData');
+                    window.location.href = '/';
+                  } catch (err) {
+                    console.error('Erro ao deletar perfil:', err);
+                    setError('Não foi possível deletar o perfil. Você pode ter consultas agendadas.');
+                    setSaving(false);
+                  }
+                }
+              }}
             >
-              {saving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/medico/consultas')}
-              disabled={saving}
-              sx={{ flex: 1 }}
-            >
-              Minhas Consultas
+              Deletar Perfil
             </Button>
           </Box>
         </Box>

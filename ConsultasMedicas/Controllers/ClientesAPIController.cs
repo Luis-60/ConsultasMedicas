@@ -71,28 +71,67 @@ namespace ConsultasMedicas.Controllers
             {
                 return StatusCode(500, $"Erro interno: {ex.Message}");
             }
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> AtualizarCliente(int id, [FromBody] Cliente clienteAtualizado)
+        }        [HttpPut("{id}")]
+        public async Task<IActionResult> AtualizarCliente(int id, [FromBody] ClienteUpdateDTO updateDto)
         {
             try
             {
+                Console.WriteLine($"Recebendo atualização para cliente ID: {id}");
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+                Console.WriteLine($"Dados recebidos: {System.Text.Json.JsonSerializer.Serialize(updateDto, jsonOptions)}");
+
+                if (updateDto == null)
+                {
+                    return BadRequest(new { message = "Dados do cliente não podem ser nulos" });
+                }
+
+                // Validação do ID
+                if (id != updateDto.IdCliente)
+                {
+                    var erro = $"ID inválido: recebido {updateDto.IdCliente}, esperado {id}";
+                    Console.WriteLine(erro);
+                    return BadRequest(new { message = erro });
+                }
+
                 var cliente = await _context.Clientes.FindAsync(id);
                 if (cliente == null)
                 {
+                    Console.WriteLine($"Cliente não encontrado: ID {id}");
                     return NotFound("Cliente não encontrado");
                 }
 
-                cliente.Nome = clienteAtualizado.Nome;
-                cliente.Telefone = new string(clienteAtualizado.Telefone?.Where(char.IsDigit).ToArray() ?? Array.Empty<char>());
-                
-                if (!string.IsNullOrEmpty(clienteAtualizado.Senha))
+                Console.WriteLine($"Cliente encontrado: {cliente.Nome}");
+
+                // Validação e limpeza do telefone
+                if (string.IsNullOrWhiteSpace(updateDto.Telefone))
                 {
-                    cliente.Senha = clienteAtualizado.Senha;
+                    return BadRequest("Telefone é obrigatório");
+                }
+
+                // Limpa a formatação do telefone mantendo como string
+                updateDto.Telefone = new string(updateDto.Telefone.Where(char.IsDigit).ToArray());
+                if (string.IsNullOrWhiteSpace(updateDto.Telefone))
+                {
+                    return BadRequest("Telefone inválido: deve conter números");
+                }
+
+                // Atualiza os campos básicos
+                cliente.Nome = updateDto.Nome.Trim();
+                cliente.Telefone = updateDto.Telefone;
+
+                // Só atualiza a senha se uma nova foi fornecida e não for espaço em branco
+                if (!string.IsNullOrWhiteSpace(updateDto.Senha) && updateDto.Senha.Trim() != " ")
+                {
+                    cliente.Senha = updateDto.Senha.Trim();
+                    Console.WriteLine("Senha atualizada");
+                }
+                else
+                {
+                    Console.WriteLine("Senha não atualizada: mantendo senha atual");
                 }
 
                 await _context.SaveChangesAsync();
+                Console.WriteLine($"Cliente atualizado com sucesso: {cliente.Nome}");
                 return Ok(cliente);
             }
             catch (Exception ex)
@@ -138,21 +177,36 @@ namespace ConsultasMedicas.Controllers
                 var message = ex.InnerException?.Message ?? ex.Message;
                 return StatusCode(500, $"Erro interno: {message}");
             }
-        }
-
-        [HttpDelete("{id}")]
+        }        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCliente(int id)
         {
-            var cliente = await _context.Clientes.FindAsync(id);
-            if (cliente == null)
+            try
             {
-                return NotFound();
+                var cliente = await _context.Clientes.FindAsync(id);
+                if (cliente == null)
+                {
+                    return NotFound();
+                }
+
+                // Verificar se o cliente tem consultas agendadas
+                var consultasAgendadas = await _context.Consultas
+                    .Where(c => c.IdCliente == id && c.Data >= DateTime.Today)
+                    .AnyAsync();
+
+                if (consultasAgendadas)
+                {
+                    return BadRequest(new { message = "Não é possível excluir o perfil pois há consultas agendadas." });
+                }
+
+                _context.Clientes.Remove(cliente);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            _context.Clientes.Remove(cliente);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erro ao excluir o perfil.", error = ex.Message });
+            }
         }
 
         private bool ClienteExists(int id)

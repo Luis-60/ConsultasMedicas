@@ -149,8 +149,13 @@ export default function Profile() {
         <Typography variant="h4" gutterBottom>
           Perfil
         </Typography>
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
+        <form onSubmit={handleSubmit}>          <Grid container spacing={3}>
+            {error && (
+              <Grid item xs={12}>
+                <Alert severity="error">{error}</Alert>
+              </Grid>
+            )}
+            
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -207,15 +212,66 @@ export default function Profile() {
                 value={formData.novaSenha}
                 onChange={handleChange}
               />
+            </Grid>            <Grid item xs={12}>
+              {/* Botões principais */}
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={24} /> : 'Salvar Alterações'}
+                  </Button>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                    onClick={() => window.location.href = '/consultas'}
+                    disabled={loading}
+                  >
+                    Minhas Consultas
+                  </Button>
+                </Grid>
+              </Grid>
             </Grid>
+
+            {/* Botão de deletar */}
             <Grid item xs={12}>
               <Button
-                type="submit"
                 variant="contained"
-                color="primary"
+                color="error"
                 fullWidth
+                disabled={loading}
+                onClick={async () => {
+                  if (window.confirm('ATENÇÃO: Esta ação não pode ser desfeita!\n\nPara deletar seu perfil:\n1. Todas as suas consultas devem ser canceladas primeiro\n2. Seus dados serão permanentemente removidos\n\nDeseja continuar?')) {
+                    try {
+                      setLoading(true);
+                      setError(null);
+                      const userData = JSON.parse(localStorage.getItem('userData'));
+                      await clientesService.deletarPerfil(userData.idCliente);
+                      
+                      // Limpa dados do usuário
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('userType');
+                      localStorage.removeItem('userData');
+                      
+                      // Redireciona com mensagem de sucesso
+                      window.location.href = '/?message=Perfil deletado com sucesso';
+                    } catch (err) {
+                      console.error('Erro ao deletar perfil:', err);
+                      setError(err.message || 'Erro ao deletar perfil. Tente novamente mais tarde.');
+                      setLoading(false);
+                    }
+                  }
+                }}
               >
-                Salvar Alterações
+                Deletar Perfil
               </Button>
             </Grid>
           </Grid>

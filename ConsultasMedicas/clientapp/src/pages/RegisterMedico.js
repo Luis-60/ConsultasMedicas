@@ -18,8 +18,7 @@ import {
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 
 const RegisterMedico = () => {
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();  const [formData, setFormData] = useState({
     Nome: '',
     Email: '',
     Telefone: '',
@@ -28,7 +27,8 @@ const RegisterMedico = () => {
     Senha: '',
     IdConsultorio: '',
     IdEspecialidade: '',
-    IdSexo: ''
+    IdSexo: '',
+    ConfirmarSenha: ''
   });
 
   const [consultorios, setConsultorios] = useState([]);
@@ -46,7 +46,29 @@ const RegisterMedico = () => {
       console.log(`Fetching data from ${endpoint}...`);
       const response = await api.get(`/MedicoCombosAPI/${endpoint}`);
       console.log(`Data received from ${endpoint}:`, response.data);
-      setter(response.data);
+
+      // Normaliza os dados recebidos para garantir que IDs sejam strings
+      const normalizedData = response.data.map(item => ({
+        ...item,
+        id: String(item.id || item.Id || item.idConsultorio || item.IdConsultorio || 
+                   item.idEspecialidade || item.IdEspecialidade || 
+                   item.idSexo || item.IdSexo),
+        nome: item.nome || item.Nome || item.descricao || item.Descricao
+      }));
+
+      console.log(`Normalized data for ${endpoint}:`, normalizedData);
+      setter(normalizedData);
+
+      // Se for o primeiro item da lista, define como valor inicial no formData
+      if (normalizedData.length > 0) {
+        const key = endpoint === 'Consultorios' ? 'IdConsultorio' :
+                   endpoint === 'Especialidades' ? 'IdEspecialidade' : 'IdSexo';
+        setFormData(prev => ({
+          ...prev,
+          [key]: String(normalizedData[0].id)
+        }));
+      }
+
       setDropdownErrors(prev => ({ ...prev, [errorKey]: '' }));
     } catch (error) {
       console.error(`Erro ao buscar dados de ${endpoint}:`, error);
@@ -108,14 +130,22 @@ const RegisterMedico = () => {
     const { name, value } = e.target;
     
     let formattedValue = value;
-    if (name === 'Telefone') {
+
+    // Tratamento especial para campos select
+    if (name === 'IdConsultorio' || name === 'IdEspecialidade' || name === 'IdSexo') {
+      formattedValue = String(value || '');
+    }
+    // Formatação do telefone
+    else if (name === 'Telefone') {
       const numbersOnly = value.replace(/\D/g, '');
       if (numbersOnly.length <= 11) {
         formattedValue = formatTelefone(numbersOnly);
       } else {
         return;
       }
-    } else if (name === 'CPF') {
+    }
+    // Formatação do CPF
+    else if (name === 'CPF') {
       const numbersOnly = value.replace(/\D/g, '');
       if (numbersOnly.length <= 11) {
         formattedValue = formatCPF(numbersOnly);
@@ -323,9 +353,11 @@ const RegisterMedico = () => {
                     </IconButton>
                   )
                 }}
-              >
-                {especialidades.map((esp) => (
-                  <MenuItem key={esp.idEspecialidade} value={esp.idEspecialidade}>
+              >                {especialidades.map((esp) => (
+                  <MenuItem 
+                    key={esp.id || esp.idEspecialidade} 
+                    value={String(esp.id || esp.idEspecialidade)}
+                  >
                     {esp.nome}
                   </MenuItem>
                 ))}
@@ -357,9 +389,11 @@ const RegisterMedico = () => {
                     </IconButton>
                   )
                 }}
-              >
-                {consultorios.map((cons) => (
-                  <MenuItem key={cons.idConsultorio} value={cons.idConsultorio}>
+              >                {consultorios.map((cons) => (
+                  <MenuItem 
+                    key={cons.id || cons.idConsultorio} 
+                    value={String(cons.id || cons.idConsultorio)}
+                  >
                     {cons.nome}
                   </MenuItem>
                 ))}
@@ -392,7 +426,10 @@ const RegisterMedico = () => {
                   )
                 }}
               >                {sexos.map((sexo) => (
-                  <MenuItem key={sexo.idSexo} value={sexo.idSexo}>
+                  <MenuItem 
+                    key={sexo.id || sexo.idSexo} 
+                    value={String(sexo.id || sexo.idSexo)}
+                  >
                     {sexo.nome}
                   </MenuItem>
                 ))}

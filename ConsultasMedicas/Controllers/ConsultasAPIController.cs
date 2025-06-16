@@ -235,6 +235,35 @@ namespace ConsultasMedicas.Controllers
             return NoContent();
         }
 
+        // GET: api/ConsultasAPI/cliente/{idCliente}
+        [HttpGet("cliente/{idCliente}")]
+        public async Task<ActionResult<IEnumerable<Consulta>>> GetConsultasByCliente(int idCliente)
+        {
+            try
+            {
+                // Verifica se o cliente existe
+                var clienteExists = await _context.Clientes.AnyAsync(c => c.IdCliente == idCliente);
+                if (!clienteExists)
+                {
+                    return NotFound($"Cliente com ID {idCliente} não encontrado");
+                }
+
+                var consultas = await _context.Consultas
+                    .Include(c => c.Medico)
+                        .ThenInclude(m => m.Especialidade)
+                    .Include(c => c.Cliente)
+                    .Where(c => c.IdCliente == idCliente)
+                    .ToListAsync();
+
+                return Ok(consultas);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao buscar consultas do cliente {idCliente}: {ex.Message}");
+                return StatusCode(500, $"Erro interno: {ex.Message}");
+            }
+        }
+
         private bool ConsultaExists(int id)
         {
             return _context.Consultas.Any(e => e.IdConsulta == id);

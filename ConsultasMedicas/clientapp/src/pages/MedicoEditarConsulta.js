@@ -6,7 +6,9 @@ import {
   Grid,
   TextField,
   Button,
-  Alert
+  Alert,
+  Box,
+  CircularProgress
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -19,9 +21,14 @@ import { consultasService } from '../services/api';
 const MedicoEditarConsulta = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [data, setData] = useState(null);
-  const [horario, setHorario] = useState('');
+  const [consulta, setConsulta] = useState({
+    data: null,
+    horario: '',
+    cliente: null,
+    medico: null
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   // Horários disponíveis
@@ -33,16 +40,30 @@ const MedicoEditarConsulta = () => {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        // Carregar dados da consulta
-        const responseConsulta = await consultasService.detalhar(id);
-        const consulta = responseConsulta.data;
+        console.log('Carregando consulta com ID:', id);
+        if (!id) {
+          throw new Error('ID da consulta não fornecido');
+        }
 
-        setData(dayjs(consulta.data));
-        setHorario(consulta.horario.substring(0, 5)); // Formato HH:mm
+        const responseConsulta = await consultasService.detalhar(id);
+        console.log('Dados da consulta recebidos:', responseConsulta.data);
+
+        if (!responseConsulta.data) {
+          throw new Error('Consulta não encontrada');
+        }
+
+        const consultaData = responseConsulta.data;
+        setConsulta({
+          data: dayjs(consultaData.data || consultaData.Data),
+          horario: (consultaData.horario || consultaData.Horario || '').substring(0, 5),
+          cliente: consultaData.cliente || consultaData.Cliente,
+          medico: consultaData.medico || consultaData.Medico
+        });
+
         setLoading(false);
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        setError('Erro ao carregar dados da consulta: ' + err.message);
+        setError(err.message || 'Erro ao carregar dados da consulta');
         setLoading(false);
       }
     };
@@ -53,32 +74,43 @@ const MedicoEditarConsulta = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSaving(true);
 
-    if (!data || !horario) {
-      setError('Data e horário são obrigatórios');
-      return;
-    }
+    try {
+      if (!consulta.data || !consulta.horario) {
+        throw new Error('Data e horário são obrigatórios');
+      }
 
-    try {      const consultaAtual = (await consultasService.detalhar(id)).data;
-      const consulta = {
-        ...consultaAtual,
+      const consultaAtualizada = {
         idConsulta: parseInt(id),
-        data: data.format('YYYY-MM-DD'),
-        horario: horario + ':00'
+        data: consulta.data.format('YYYY-MM-DD'),
+        horario: consulta.horario + ':00',
+        idMedico: consulta.medico?.idMedico || consulta.medico?.IdMedico,
+        idCliente: consulta.cliente?.idCliente || consulta.cliente?.IdCliente
       };
 
-      await consultasService.atualizar(id, consulta);
+      console.log('Enviando atualização:', consultaAtualizada);
+      await consultasService.atualizar(id, consultaAtualizada);
+      
       navigate('/medico/consultas', { 
         state: { message: 'Consulta atualizada com sucesso!' }
       });
     } catch (err) {
       console.error('Erro ao atualizar consulta:', err);
       setError(err.message || 'Erro ao atualizar consulta');
+    } finally {
+      setSaving(false);
     }
   };
 
   if (loading) {
-    return <Typography>Carregando...</Typography>;
+    return (
+      <Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   return (
@@ -97,12 +129,21 @@ const MedicoEditarConsulta = () => {
         <form onSubmit={handleSubmit}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
+                Paciente: {consulta.cliente?.nome || consulta.cliente?.Nome || 'Não informado'}
+              </Typography>
+              <Typography variant="subtitle1" gutterBottom>
+                Contato: {consulta.cliente?.telefone || consulta.cliente?.Telefone || 'Não informado'}
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="pt-br">
                 <DatePicker
                   label="Data da Consulta"
-                  value={data}
-                  onChange={(newValue) => setData(newValue)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
+                  value={consulta.data}
+                  onChange={(newValue) => setConsulta(prev => ({ ...prev, data: newValue }))}
+                  renderInput={(params) => <TextField {...params} fullWidth required />}
                   disablePast
                 />
               </LocalizationProvider>
@@ -113,8 +154,9 @@ const MedicoEditarConsulta = () => {
                 select
                 fullWidth
                 label="Horário"
-                value={horario}
-                onChange={(e) => setHorario(e.target.value)}
+                value={consulta.horario}
+                onChange={(e) => setConsulta(prev => ({ ...prev, horario: e.target.value }))}
+                required
                 SelectProps={{
                   native: true,
                 }}
@@ -134,8 +176,9 @@ const MedicoEditarConsulta = () => {
                 variant="contained"
                 fullWidth
                 size="large"
+                disabled={saving}
               >
-                Atualizar Consulta
+                {saving ? <CircularProgress size={24} /> : 'Atualizar Consulta'}
               </Button>
             </Grid>
 
@@ -144,6 +187,7 @@ const MedicoEditarConsulta = () => {
                 variant="outlined"
                 fullWidth
                 onClick={() => navigate('/medico/consultas')}
+                disabled={saving}
               >
                 Voltar
               </Button>

@@ -167,9 +167,8 @@ const AgendarConsulta = () => {
                   label="Médico"
                   required
                 >
-                  {medicos.map((med) => (
-                    <MenuItem key={med.idMedico} value={med.idMedico}>
-                      Dr(a). {med.nome} - {med.especialidade?.nome || 'Especialidade não informada'}
+                  {medicos.map((med) => (                    <MenuItem key={med.idMedico} value={med.idMedico}>
+                      Dr(a). {med.nome} - {med.especialidade.nome}
                     </MenuItem>
                   ))}
                 </Select>
